@@ -10,7 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com), semver: [SemVer](https:/
   - Plugin adı: `vault-studio` → `trail`
   - Slash command: `/vault-studio` → `/trail` ("vault studio aç" doğal dil tetiği SKILL'de backward-compat olarak kaldı)
   - localStorage anahtarları: `vault-studio-*` → `trail-*` (henüz public kullanıcı yok, etki sıfır)
-  - GitHub repo: `selmakcby/vault-studio` → `selmakcby/trail` (henüz push edilmedi, sadece metadata güncellendi)
+  - GitHub repo: `selmakcby/vault-studio` → `selmakcby/claude-code-trail` (henüz push edilmedi, sadece metadata güncellendi)
   - Lokal klasör adı `vault-studio` olarak kaldı (geçiş kolaylığı)
 
 ### Eklendi

@@ -11,7 +11,7 @@
 In any Claude Code session:
 
 ```
-/plugin marketplace add selmakcby/trail
+/plugin marketplace add selmakcby/claude-code-trail
 /plugin install trail@selmakcby
 ```
 
@@ -73,7 +73,7 @@ Fully local: server binds to `127.0.0.1`, no LLM calls, no data leaves your mach
 If you cloned the repo:
 
 ```bash
-git clone https://github.com/selmakcby/trail.git ~/trail
+git clone https://github.com/selmakcby/claude-code-trail.git ~/trail
 cd ~/trail
 VAULT_DIR=/path/to/your-claude-project bash scripts/start.sh
 ```
@@ -100,7 +100,7 @@ Trail bu üçünü tek pakette çözüyor. Selma'nın YouTube content production
 ## Mimari
 
 ```
-Plugin (GitHub: selmakcby/trail · local: ~/projects/vault-studio)
+Plugin (GitHub: selmakcby/claude-code-trail · local: ~/projects/vault-studio)
 ├── .claude-plugin/{plugin.json, marketplace.json}
 ├── commands/trail.md                 → /trail
 ├── skills/trail/SKILL.md             → "trail aç"

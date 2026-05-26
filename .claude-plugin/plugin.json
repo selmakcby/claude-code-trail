@@ -6,8 +6,8 @@
     "name": "Selma Kocabıyık",
     "url": "https://github.com/selmakcby"
   },
-  "homepage": "https://github.com/selmakcby/trail",
-  "repository": "https://github.com/selmakcby/trail",
+  "homepage": "https://github.com/selmakcby/claude-code-trail",
+  "repository": "https://github.com/selmakcby/claude-code-trail",
   "license": "MIT",
   "keywords": ["claude-code", "observability", "trail", "memory", "agents", "learning"]
 }

@@ -68,7 +68,7 @@ Trail bu boşluğu kapatıyor. **Tamamen lokal**: Bun server `127.0.0.1`'e bind,
 ## Mimari
 
 ```
-Claude Code Plugin (GitHub: selmakcby/trail · local: ~/projects/vault-studio)
+Claude Code Plugin (GitHub: selmakcby/claude-code-trail · local: ~/projects/vault-studio)
        │
        ├─ .claude-plugin/plugin.json + marketplace.json
        ├─ commands/trail.md              → /trail
@@ -148,4 +148,4 @@ Caption: *"Claude Code'la çalıştığında ne olduğunu ilk kez şeffaf hale g
 - **Memory dosya formatı**: Frontmatter (name/description/type) varsayımı doğrulanmalı; yoksa filename'den çıkarım
 - **Çoklu vault**: Aynı projede 2 instance → port çakışması; start.sh 7777-7790 arası deniyor
 - **Bun bağımlılığı**: Plugin install sonrası ilk tetikte kontrol, yoksa kurulum komutu öner
-- **MIT lisans + GitHub açık kaynak**: Twitter post için zorunlu, repo `selmakcby/trail`
+- **MIT lisans + GitHub açık kaynak**: Twitter post için zorunlu, repo `selmakcby/claude-code-trail`
