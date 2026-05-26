@@ -1,45 +1,60 @@
 ---
 name: trail
-description: Kullanıcı "trail aç", "Claude'un izini göster", "projeyi browser'da aç", "trail studio aç", "vault studio aç" (eski isim) gibi şeyler söylediğinde Trail web arayüzünü lokalde başlatır. Tüm Claude Code projeleri tek pencerede gezinmeli — notlar, dosyalar, Claude'un patikası, bellek, ajanlar, geçmiş, kılavuz.
+description: When the user says "open trail", "trail aç", "show Claude's path", "open the project in browser", "trail studio aç", "vault studio aç" (old name), or similar, start Trail's local web UI. All Claude Code projects can be browsed from one window — notes, files, Claude's path, memory, agents, history, guide.
 ---
 
 # Trail Skill
 
-Kullanıcı Trail'i açmak istediğinde aşağıdaki Bash script'ini çalıştır. Plugin root'unu üç şekilde resolve etmeye çalışır:
-1. `CLAUDE_PLUGIN_ROOT` env var (plugin install edilmişse otomatik set)
-2. `~/.claude/skills/trail` symlink'inden parent'a çık (geliştirme/manuel kurulum)
-3. İkisi de yoksa kullanıcıya kurulum talimatı
+When the user wants to open Trail, run this Bash script. It resolves the plugin root in 4 fallback steps:
+
+1. `CLAUDE_PLUGIN_ROOT` env var (set by Claude Code when plugin is installed)
+2. `~/.claude/plugins/cache/*/trail/*/scripts/` (standard install location)
+3. `~/.claude/plugins/marketplaces/*/scripts/` (marketplace cache)
+4. `~/.claude/skills/trail` symlink (dev install)
 
 ```bash
 PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-}"
+
+if [ -z "$PLUGIN_DIR" ]; then
+  CANDIDATE=$(ls -dt "$HOME"/.claude/plugins/cache/*/trail/*/scripts 2>/dev/null | head -1)
+  [ -n "$CANDIDATE" ] && PLUGIN_DIR=$(dirname "$CANDIDATE")
+fi
+
+if [ -z "$PLUGIN_DIR" ]; then
+  CANDIDATE=$(ls -dt "$HOME"/.claude/plugins/marketplaces/*/scripts 2>/dev/null | head -1)
+  [ -n "$CANDIDATE" ] && PLUGIN_DIR=$(dirname "$CANDIDATE")
+fi
+
 if [ -z "$PLUGIN_DIR" ] && [ -L "$HOME/.claude/skills/trail" ]; then
   RESOLVED=$(readlink "$HOME/.claude/skills/trail")
   PLUGIN_DIR=$(cd "$(dirname "$RESOLVED")/.." && pwd 2>/dev/null)
 fi
+
 if [ -z "$PLUGIN_DIR" ] || [ ! -d "$PLUGIN_DIR/scripts" ]; then
-  echo "Trail: plugin yolu bulunamadı. Bkz: ~/.claude/skills/trail/SKILL.md"
+  echo "Trail: plugin path not found. Try: /plugin marketplace list"
   exit 1
 fi
+
 bash "$PLUGIN_DIR/scripts/start.sh"
 ```
 
-## Sonra kullanıcıya bildir
+## After starting
 
-Hangi portta açıldığını ve nasıl durduracağını (`Ctrl+C`) söyle. Browser açıldıktan sonra sol üstteki proje seçici dropdown'dan farklı Claude projelerine geçilebileceğini hatırlat.
+Tell the user which port it opened on and how to stop (`Ctrl+C`). Remind them they can switch projects from the dropdown top-left.
 
-## Tetik örnekleri
+## Trigger examples
 
+- "open trail"
 - "trail aç"
+- "show me what Claude did"
 - "Claude'un izini göster"
 - "trail studio aç"
-- "vault studio aç" (eski isim — backward compat)
-- "projeyi browser'da aç"
-- "open trail"
-- "show me what Claude did"
+- "vault studio aç" (legacy)
+- "open project in browser"
 
-## Güvenlik notları
+## Security notes
 
-- Server **sadece localhost**'a bind, LAN'a açık değil
-- `.env`, `*credentials*`, `*api_key*` gibi dosyalar mask'lı ve readonly
-- Path traversal koruması var, izin verilen proje dizinleri dışına çıkamaz
-- LLM çağrısı YOK — tüm görselleştirme lokal veri üzerinden
+- Server binds to **127.0.0.1 only** (LAN/internet not exposed)
+- `.env`, `*credentials*`, `*api_key*` masked + readonly
+- Path traversal protection on file API
+- **No LLM calls** — purely local visualization

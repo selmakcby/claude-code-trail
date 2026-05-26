@@ -1,25 +1,41 @@
 ---
-description: Trail'i aç (Claude Code observability + öğrenme arayüzü, lokal :7777, browser'da)
+description: Open Trail (Claude Code observability + learning UI, local :7777, in browser)
 argument-hint: "[port?]"
 allowed-tools: Bash(bash:*)
 ---
 
-Trail'i mevcut çalışma dizini için başlat. Mevcut Trail server zaten çalışıyorsa yeniden başlatmaz — sadece browser'ı yeni projeye yönlendirir.
+Start Trail for the current working directory. If a Trail server is already running, just opens the browser pointed at the current project (no new server spawned).
 
 ```bash
-# Plugin root'u resolve et — 3 fallback
+# Resolve plugin root — 4 fallbacks (most to least common):
 PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-}"
+
+# 1) Standard Claude Code plugin install cache
+if [ -z "$PLUGIN_DIR" ]; then
+  CANDIDATE=$(ls -dt "$HOME"/.claude/plugins/cache/*/trail/*/scripts 2>/dev/null | head -1)
+  [ -n "$CANDIDATE" ] && PLUGIN_DIR=$(dirname "$CANDIDATE")
+fi
+
+# 2) Marketplaces dir (alternative cache location)
+if [ -z "$PLUGIN_DIR" ]; then
+  CANDIDATE=$(ls -dt "$HOME"/.claude/plugins/marketplaces/*/scripts 2>/dev/null | head -1)
+  [ -n "$CANDIDATE" ] && PLUGIN_DIR=$(dirname "$CANDIDATE")
+fi
+
+# 3) User-level skill symlink (dev install)
 if [ -z "$PLUGIN_DIR" ] && [ -L "$HOME/.claude/skills/trail" ]; then
   RESOLVED=$(readlink "$HOME/.claude/skills/trail")
   PLUGIN_DIR=$(cd "$(dirname "$RESOLVED")/.." && pwd 2>/dev/null)
 fi
+
 if [ -z "$PLUGIN_DIR" ] || [ ! -d "$PLUGIN_DIR/scripts" ]; then
-  echo "Trail: plugin yolu bulunamadı."
-  echo "Kurulum kontrolü: ls -la ~/.claude/skills/trail ~/.claude/commands/trail.md"
+  echo "Trail: plugin path not found."
+  echo "Tried: \$CLAUDE_PLUGIN_ROOT, ~/.claude/plugins/cache/*/trail/*/, ~/.claude/skills/trail"
+  echo "Check installation: /plugin marketplace list"
   exit 1
 fi
 
 bash "$PLUGIN_DIR/scripts/start.sh" "${1:-7777}"
 ```
 
-Server başlatıldıktan sonra browser'da açılan adresi kullanıcıya bildir. Sol üstteki proje seçicide farklı Claude projeleri görünür. Durdurmak için terminal'de `Ctrl+C`.
+After server starts, tell the user the URL. From the top-left dropdown they can switch between Claude projects. Stop with `Ctrl+C` in the terminal.
