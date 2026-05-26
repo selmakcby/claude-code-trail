@@ -1,0 +1,170 @@
+/* Terminal — classic Mac Terminal.app (Pro theme).
+   Black background, off-white monospace text. No neon, no scanlines, no glow.
+   Looks like an actual terminal window — minimal, functional, professional. */
+
+:root {
+  --font-body: 'SF Mono', 'Menlo', 'Monaco', monospace;
+  --font-mono: 'SF Mono', 'Menlo', 'Monaco', monospace;
+
+  /* Mac Terminal "Pro" palette */
+  --bg: #1a1a1a;
+  --bg-bar: #0a0a0a;            /* darker chrome */
+  --bg-sidebar: #1a1a1a;
+  --bg-content: #1a1a1a;
+  --bg-content-bar: #0a0a0a;
+  --bg-hover: rgba(248, 248, 242, 0.05);
+  --bg-input: #0a0a0a;
+  --bg-callout: #232323;         /* very subtle elevation */
+  --bg-code: #000000;
+  --bg-code-inline: #2a2a2a;
+
+  --text: #f8f8f2;               /* off-white, easy on eyes */
+  --text-2: #b8b8b0;
+  --text-3: #707068;
+
+  --border: #353535;
+  --border-strong: #4a4a4a;
+
+  /* Accent: off-white, terminal feel — no neon green */
+  --accent: #f8f8f2;
+  --accent-deep: #ffffff;
+  --accent-soft: rgba(248, 248, 242, 0.07);
+  --accent-text: #1a1a1a;
+
+  /* Functional: muted amber for warnings/interactive — classic terminal hue */
+  --info: #e6c07b;
+
+  --danger: #ff6b6b;
+}
+
+body { background: var(--bg); }
+
+#app { position: relative; z-index: 1; }
+
+/* Pure monospace everywhere — terminal app convention */
+.brand-name {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: lowercase;
+  color: var(--text);
+}
+.brand-tagline {
+  color: var(--text-3);
+  text-transform: lowercase;
+}
+
+/* Lowercase everything — terminal aesthetic */
+.tab,
+.theme-opt,
+.lang-opt,
+.cat-btn,
+.type-chip,
+.btn {
+  text-transform: lowercase;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+
+/* Active tab: simple inverted block, like selected terminal text */
+.tab.active {
+  color: var(--bg);
+  background: var(--text);
+  font-weight: 600;
+}
+
+/* Buttons: high-contrast, terminal-like */
+.btn-primary {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-deep);
+}
+
+/* Forms: minimal */
+.mem-form-input:focus,
+.mem-form-select:focus,
+.mem-form-textarea:focus,
+.notes-search:focus,
+.project-switcher-search:focus,
+.editor-textarea:focus {
+  border-color: var(--text);
+  box-shadow: none;
+  outline: none;
+}
+
+/* Headings: ASCII-like prefix, monospace, no color tricks */
+.markdown-render h1,
+.markdown-render h2,
+.markdown-render h3 {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.markdown-render h1::before { content: '## '; color: var(--text-3); }
+.markdown-render h2::before { content: '### '; color: var(--text-3); }
+.markdown-render h3::before { content: '#### '; color: var(--text-3); }
+
+/* Inline code: subtle box */
+.markdown-render code {
+  color: var(--text);
+  background: var(--bg-code-inline);
+  border: 1px solid var(--border);
+  font-size: 0.92em;
+}
+
+/* Links: amber underline (classic terminal interactive color) */
+a { color: var(--info); }
+.markdown-render a.wiki-link {
+  background: transparent;
+  color: var(--info);
+  border: 1px solid transparent;
+  border-bottom: 1px dashed var(--info);
+  padding: 0 2px;
+  font-family: inherit;
+}
+.markdown-render a.wiki-link:hover {
+  background: rgba(230, 192, 123, 0.08);
+}
+
+/* Cards: pure outlined boxes */
+.memory-card,
+.agent-card,
+.session-card,
+.note-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0;            /* no rounded corners — terminal-y */
+}
+.memory-card:hover:not(.active),
+.agent-card:hover:not(.active),
+.session-card:hover:not(.active),
+.note-card:hover:not(.active) {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--text-3);
+  background: var(--bg-callout);
+}
+.memory-card.active,
+.agent-card.active,
+.session-card.active,
+.note-card.active {
+  background: var(--bg-callout);
+  border-color: var(--text);
+  box-shadow: none;
+}
+
+/* Topbar/Statusbar: thin top/bottom rules — terminal title bar feel */
+.topbar { border-bottom: 1px solid var(--border-strong); }
+.statusbar { border-top: 1px solid var(--border-strong); }
+
+/* Project switcher dropdown: hard-edged */
+.project-switcher-menu,
+.welcome-panel,
+.mem-create-form {
+  border-radius: 0;
+}

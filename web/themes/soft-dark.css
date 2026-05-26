@@ -1,0 +1,133 @@
+/* Dark — GitHub Primer / Vercel / Linear inspired neutral pro palette.
+   No gradient text. No fake accents. Just clean grayscale + one functional blue. */
+
+:root {
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+
+  /* GitHub-derived dark grayscale */
+  --bg: #0d1117;            /* canvas */
+  --bg-bar: #010409;        /* darker chrome (topbar/statusbar) */
+  --bg-sidebar: #0d1117;
+  --bg-content: #0d1117;
+  --bg-content-bar: #010409;
+  --bg-hover: rgba(177, 186, 196, 0.08);
+  --bg-input: #0d1117;
+  --bg-callout: #161b22;    /* elevated surfaces */
+  --bg-code: #010409;
+  --bg-code-inline: #21262d;
+
+  --text: #e6edf3;
+  --text-2: #8b949e;
+  --text-3: #6e7681;
+
+  --border: #21262d;
+  --border-strong: #30363d;
+
+  /* Accent: neutral off-white (Vercel/Linear pattern — minimal accent use) */
+  --accent: #f0f3f6;
+  --accent-deep: #ffffff;
+  --accent-soft: rgba(240, 243, 246, 0.08);
+  --accent-text: #0d1117;
+
+  /* Secondary functional color (links, focus, info) */
+  --info: #58a6ff;
+
+  --danger: #f85149;
+}
+
+/* No backdrop gradient — keep canvas flat & professional */
+body { background: var(--bg); }
+
+#app { position: relative; z-index: 1; }
+
+/* Primary buttons use the off-white accent — high-contrast, clean */
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+}
+
+/* Links / focus / interactive blue accent */
+a { color: var(--info); }
+.markdown-render a.wiki-link {
+  background: rgba(88, 166, 255, 0.12);
+  color: #79b8ff;
+  border: 1px solid rgba(88, 166, 255, 0.18);
+}
+.markdown-render a.wiki-link:hover {
+  background: rgba(88, 166, 255, 0.18);
+  color: var(--info);
+}
+
+/* Inline code: muted, no orange */
+.markdown-render code {
+  color: #c9d1d9;
+  background: var(--bg-code-inline);
+  border: 1px solid var(--border);
+}
+
+/* Brand: no gradient, just clean weight */
+.brand-name { color: var(--text); font-weight: 700; letter-spacing: -0.005em; }
+.brand-tagline { color: var(--text-3); }
+
+/* Active tab: thin underline, no big accent fill */
+.tab.active {
+  color: var(--text);
+  background: transparent;
+  box-shadow: inset 0 -2px 0 var(--text);
+  font-weight: 600;
+}
+
+/* Theme/lang switch — flat segmented */
+.theme-opt[aria-checked="true"],
+.lang-opt[aria-checked="true"] {
+  background: var(--bg-callout);
+  color: var(--text);
+  border-color: transparent;
+}
+
+/* Form focus: subtle white ring, not blue glow */
+.mem-form-input:focus,
+.mem-form-select:focus,
+.mem-form-textarea:focus,
+.notes-search:focus,
+.project-switcher-search:focus,
+.editor-textarea:focus {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px rgba(240, 243, 246, 0.08);
+}
+
+/* Headings: bigger weight delta, no gradients */
+.markdown-render h1,
+.markdown-render h2,
+.markdown-render h3 {
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.markdown-render h1 { background: none; -webkit-text-fill-color: var(--text); }
+
+/* Card hover: subtle border lift, no shadow theatrics */
+.memory-card:hover:not(.active),
+.agent-card:hover:not(.active),
+.session-card:hover:not(.active),
+.note-card:hover:not(.active) {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border-strong);
+  background: var(--bg-callout);
+}
+.memory-card.active,
+.agent-card.active,
+.session-card.active,
+.note-card.active {
+  background: var(--bg-callout);
+  border-color: var(--border-strong);
+  box-shadow: inset 2px 0 0 var(--text);
+}

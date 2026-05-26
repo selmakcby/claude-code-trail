@@ -1,140 +1,151 @@
-# Plan: VaultStudio — Claude Code Plugin
+# Plan: Trail — Claude Code'u gör, öğren, yönet
 
-## Context
+> **İsim notu:** Plan v0 → v0.2 VaultStudio idi, v0.3'te Trail oldu.
+> Eski "vault" terimi artık sadece "vault/" klasörünü (markdown notların) ifade eder; ürün adı Trail.
 
-Selma `youtube-brain` vault'unda Claude Code ile çalışırken vault'un kendisinin **arayüzsüz** olduğunu fark etti. Bilgi orada ama görmek/dolaşmak için Obsidian veya komut satırı şart. Bu hem teknik olmayan kullanıcılar için yüksek bariyer, hem de Claude Code'un içinde olup bitenin (hangi dosya okundu/yazıldı, ajanlar ne yaptı) **görünmez** olması demek.
+## Vizyon
 
-VaultStudio bu boşluğu kapatıyor: **Claude Code içine kurulan bir plugin**, kullanıcı Claude'a sorunca lokalde küçük bir web server başlatıyor, browser'dan tüm projeyi (vault + kod + ajanlar + skill'ler + env) görsel bir studio olarak veriyor. Üç ayırt edici özellik: (1) **Claude'un patikası** — agent'ın session'da hangi dosyaları sırasıyla okuyup yazdığını animasyonlu trail olarak görselleştirme, (2) **3–4 hazır tema + serbest CSS customization** — Obsidian'dan farkı: ürün gibi pretty bir output, (3) **Yerleşik kılavuz** — Claude Code'u bilmeyen biri "vault nedir, LLM wiki nedir, skill nedir" sayfalarını okuyarak içeri girebiliyor.
+**Trail = Claude Code'la çalışırken ne olduğunu gösteren ilk araç.**
 
-Pozisyonlama: Obsidian (power-user, link-graph) ve NotebookLM (chat-odaklı, kapalı kutu) arasındaki boşluk. Selma sonra Twitter'da demo gif'i + makale ile yayınlayacak.
+Obsidian dosya gösteriyor. NotebookLM AI'la sohbet ettiriyor. Cursor/VSCode kod yazdırıyor. Hiçbiri Claude Code'un *kendi içinde* ne yaptığını göstermiyor. Claude:
+- Hangi dosyalara dokundu, hangi sırayla?
+- Seni nasıl hatırlıyor? (memory)
+- Hangi ajanlar kuruldu, hangileri kullanıldı?
+- Geçen hafta hangi session'da X dosyasını yazmıştık?
 
-## Scope Kararları (Selma'nın cevaplarından edit)
+Tüm bu bilgi `~/.claude/projects/<encoded-path>/` altında zaten var — sadece kimse görselleştirmiyor.
 
-Selma "hepsi olsun, herkes için olsun" dedi. Bu MVP'yi şişirir. Aşağıdaki **scope kesimi**ni öneriyorum — gerekçeleriyle:
+Trail bu boşluğu kapatıyor. **Tamamen lokal**: Bun server `127.0.0.1`'e bind, LLM çağrısı yok, dış internet trafiği yok. Privacy + instant + tam kapsama.
 
-| Selma'nın isteği | MVP'de | V2'de | Gerekçe |
-|---|---|---|---|
-| Claude rolü: organize | ✅ | | Temel iş, olmazsa olmaz |
-| Claude rolü: stil uygula | ✅ | | 3-4 tema MVP'nin diğer farkı |
-| Claude rolü: zenginleştir/öğretmen | | ✅ | LLM çağrı maliyeti + güvenlik (output sanitization) tek başına bir iş |
-| Claude rolü: site-içi Q&A | | ✅ (V3) | RAG + persistence + auth — ayrı bir epik |
-| Hedef kitle: herkes | Claude Code kullananlar | Öğrenci onboarding | Skill, Claude Code kurulu olanlara ulaşır. "Öğrenci için" demek için CC kurulum rampası lazım — bu V2 |
-| Tema: 3-4 hazır | ✅ (3 tema) | 4. tema | Editorial + terminal + paper. 4.'sü pattern oturduktan sonra |
-| Kılavuz/öğrenme modu | ✅ (statik) | İnteraktif tur | Statik markdown ders sayfaları yeter, gezi turu V2 |
-| Patika görselleştirme | ✅ | Canlı stream | Retroactive (session log parse) MVP'de. Canlı (Claude Code çalışırken event stream) çok daha zor |
+"Vault" terimini yeniden tanımlıyoruz: Obsidian'ın markdown vault'u değil, **Claude Code'un projende oluşturduğu tüm hafıza ve varlık alanı** (dosyalar + session'lar + bellek + ajanlar + skill'ler).
 
-**Edit'in mantığı:** Selma "mantıksız yerleri editle" dedi. Yukarıdaki kesim MVP'yi 1 haftalık iş yapıyor — patladıkça V2 olur. Twitter post'u için demo gif daha güçlü çünkü tek bir net hikaye anlatıyor: "vault'una arayüz verdim + Claude'un patikası bonus".
+## Konumlandırma
+
+| | Obsidian | NotebookLM | Cursor/VSCode | **Trail** |
+|---|---|---|---|---|
+| Markdown vault | ✓ | | | ✓ |
+| AI chat | | ✓ | ✓ | |
+| Kod editör | | | ✓ | (basit) |
+| **Claude Code observability** | | | | **✓ özgün** |
+| Privacy (lokal-only) | ✓ | | | ✓ |
+| Açık kaynak + plugin | ✓ | | (kısmen) | ✓ |
+
+## Beş sekme
+
+### 1. Files (✅ V1)
+- File tree, 5 kategori filter (vault/code/agents/skills/data)
+- Markdown render + edit + save
+- Wiki-link `[[…]]` tıklanabilir
+- Secret guard: `.env`, `*credentials*` mask + readonly
+
+### 2. Trail — Claude'un Patikası (V1.5)
+- Aktif session'ın `*.jsonl` log'unu parse et
+- Tool use kronolojisi: Read/Edit/Write/Bash/Grep/Agent
+- **File heatmap**: hangi dosyalara kaç kere dokundu
+- **Timeline scrubber**: zamanı geri/ileri al, sırayla göster
+- Filter: tool type'a göre
+
+### 3. Memory (V1.5)
+- `<slug>/memory/MEMORY.md` index + type'lı memory dosyaları
+- 4 type'a göre kartlar: user / feedback / project / reference
+- Her kart: title, description, body, eklenme zamanı
+- Edit (markdown), Sil
+- Yeni memory ekle butonu
+
+### 4. Agents (V1.5)
+- `.claude/agents/*.md` (proje) + `~/.claude/agents/*.md` (global)
+- Her ajan kartı: name, description, tools, system prompt önizleme
+- **Kullanım sıklığı**: son N session'da kaç kere çağrıldı (session log'dan say)
+- "Kullanılmayan ajanlar" bölümü → temizlik önerisi
+
+### 5. Sessions (V1.6)
+- Tüm `<slug>/*.jsonl` dosyaları, kronolojik sıralı
+- Her session: timestamp, mesaj sayısı, model, tool use sayısı, ana özet
+- Tıklayınca: replay — user/assistant mesajları + tool call'lar
+- Search: "geçen hafta X dosyası" → o session'ı bul
+- Cost (token usage) gösterimi
 
 ## Mimari
 
 ```
-Claude Code skill (~/.claude/skills/vault-studio/)
+Claude Code Plugin (GitHub: selmakcby/trail · local: ~/projects/vault-studio)
        │
-       ↓  user: "vault studio aç"
+       ├─ .claude-plugin/plugin.json + marketplace.json
+       ├─ commands/trail.md              → /trail
+       └─ skills/trail/SKILL.md          → "trail aç"
+                       │
+                       ↓
+[ Bun local server :7777, 127.0.0.1-only ]
        │
-[ Bun local server :7777 ]
-       │
-       ├─ vault-scanner.ts    → directory tree + kategorize
-       ├─ path-parser.ts      → Claude Code session.jsonl parse
-       ├─ file-api.ts         → read/write markdown (vault dosyaları)
-       ├─ secret-guard.ts     → .env / key dosyaları readonly + masked preview
-       └─ static / web/       → SPA frontend
-                                  │
-                                  ↓  browser http://localhost:7777
-                                  │
-                          [ VaultStudio UI ]
-                          ├─ FileTree (sol)
-                          ├─ Editor + Preview (orta)
-                          ├─ ThemePicker + Customize (sağ üst)
-                          ├─ PathTrail (alt, overlay)
-                          └─ Guide (modal / tab)
+       ├─ vault-scanner.ts       → proje dosyaları
+       ├─ claude-paths.ts        → ~/.claude/projects/<encoded>/ çöz
+       ├─ session-parser.ts      → jsonl → tool use timeline
+       ├─ memory-parser.ts       → memory/ → type'lı kartlar
+       ├─ agent-parser.ts        → agent definitions + usage stats
+       ├─ file-api.ts            → read/write markdown
+       └─ secret-guard.ts        → .env mask + readonly
+                       │
+                       ↓
+[ Web UI — 5 sekme ]
+   Files | Trail | Memory | Agents | Sessions
+              │
+              └─ 3 tema: editorial / terminal / soft-dark
 ```
 
-**Kritik tasarım kararı: Local-only, no internet by default.** Server `127.0.0.1`'e bind, dış internet trafiği YOK. LLM çağrısı sadece zenginleştirme/Q&A için (V2+) — onda da kullanıcı API key veriyor, Selma'nın sunucusuna hiçbir şey gitmiyor.
+## Yol haritası
 
-## Critical Files (yeni proje, hepsi yeni)
+### V1 (tamamlandı)
+- Plugin manifest + marketplace + slash command + skill
+- Bun server: 127.0.0.1, /api/tree, /api/file GET+PUT
+- Files tab: tree + 5 kategori filter + markdown render + edit
+- 3 tema (editorial/terminal/soft-dark), localStorage persist
+- Secret guard, path traversal koruması, CSP
 
-Konum: `/Users/selma/projects/vault-studio/`
+### V1.5 (bu pivot)
+- **Killer features:** Trail + Memory + Agents tab'ları
+- Yeni server parsers: claude-paths, session-parser, memory-parser, agent-parser
+- Yeni endpoint'ler: /api/trail/current, /api/memory, /api/agents
+- Tab navigation UI shell
 
-| Dosya | Amaç | Reuse |
-|---|---|---|
-| `skill/SKILL.md` | Claude Code skill manifest (name, description, args) | `~/.claude/skills/terminal-presentation/` pattern referans |
-| `skill/start.sh` | `bun server/index.ts && open http://localhost:7777` | — |
-| `server/index.ts` | Bun HTTP + REST endpoints | Bun runtime native |
-| `server/vault-scanner.ts` | Directory walk + kategorize (vault/code/agent/skill/env/raw) | — |
-| `server/path-parser.ts` | `.claude/projects/<slug>/session.jsonl` parse, tool-use event'ler | Mevcut session log formatı |
-| `server/file-api.ts` | GET/PUT markdown dosyaları | Frontmatter parser: `gray-matter` |
-| `server/secret-guard.ts` | `.env*`, `*credentials*`, `*key*` mask + readonly enforce | Pattern: env regex `=([^\n]+)` → `=***` |
-| `web/index.html` | Tek HTML entry | — |
-| `web/app.ts` | Router + state | Vanilla TS (önceki sunum pattern'ı), Vue/React opsiyonel |
-| `web/components/FileTree.ts` | Kategorize sidebar (5 grup: vault / code / agents / skills / data) | — |
-| `web/components/PathTrail.ts` | Session log → animasyonlu yol (SVG path + node highlight) | Selma'nın `loop-animation.html` animation pattern'ı |
-| `web/components/Editor.ts` | Markdown edit + wiki-link autocomplete `[[…]]` | `marked` + custom autocomplete |
-| `web/components/ThemePicker.ts` | 3 hazır + CSS var customizer | Editorial palette `/Users/selma/youtube-brain/vault/themes/editorial-presentation-style.md` |
-| `web/themes/editorial.css` | Krem/terracotta (V6 stili kopyası) | `presentation.html` :root vars'tan portla |
-| `web/themes/terminal.css` | Matrix/hacker | `~/.claude/skills/terminal-presentation/` örnek dosyalardan portla |
-| `web/themes/paper.css` | Sade beyaz, akademik | Yeni — özgün |
-| `web/docs/*.md` | Kılavuz: vault-nedir, llm-wiki, skill-yazma, claude-code-nedir | İlk taslakları `vault/themes/`'den uyarla |
-| `README.md` | Proje açıklaması (TR + EN) | Selma'nın `claude-computer-demo/README.md` formatı |
+### V1.6
+- Sessions tab + replay
+- Cost/token tracking
+- Search (cross-session)
 
-## MVP Akışı (kullanıcı bakışı)
+### V2
+- Wiki-link autocomplete + graph view
+- CSS variable customizer (tema runtime tweak)
+- 4. tema (community)
+- LLM zenginleştirme (kullanıcı API key)
+- Statik site export
 
-1. Kullanıcı `~/.claude/skills/vault-studio/` skill'i kurar (tek satır install komutu)
-2. Herhangi bir projede Claude'a "vault studio aç" der
-3. Skill `bun server` başlatır, browser açılır → `http://localhost:7777`
-4. Studio yüklenir:
-   - **Sol**: file tree, 5 kategori (vault / code / agents / skills / data)
-   - **Orta**: dosya seçince markdown render + wiki-link tıklanabilir
-   - **Sağ üst**: tema picker (editorial / terminal / paper), "customize" tuşu CSS var slider'ları açar
-   - **Alt overlay**: "Claude'un patikası" — son session'da hangi sırada hangi dosya, animasyonlu
-   - **Top bar**: "Kılavuz" tuşu — modal'da statik öğrenme sayfaları
-5. Kullanıcı not yazabilir (sol "yeni not" tuşu) → vault'a yazılır
-6. Wiki link autocomplete: `[[` yazınca mevcut dosyalar listelenir
-
-## Güvenlik / Security (zorunlu)
+## Güvenlik
 
 - Server **sadece** `127.0.0.1:7777` (LAN'a açık değil, internet'e açık değil)
-- Vault path **skill başlatıldığı cwd**'ye scoped — başka klasör görünmez
-- `.env*`, `id_*`, `*_credentials*`, `*api_key*` regex match'leri **mask + readonly**
-- File API'de path traversal koruması (`..` reject, realpath check)
-- LLM çağrısı YOK (MVP'de). V2'de eklendiğinde: user-provided key, sunucu sadece proxy, log yok
+- `~/.claude/projects/<encoded>/` salt-okunur erişim (memory hariç — onun edit/sil var)
+- Vault path **cwd**'ye scoped; `.env*`, `id_*`, `*credentials*` mask + readonly
+- Path traversal koruması (realpath check)
+- LLM çağrısı YOK
 - CSP header: `default-src 'self'`, no external scripts
 
-## Verification (uçtan uca test)
+## Twitter Demo (post-pivot)
 
-1. **Kurulum testi**: `~/.claude/skills/vault-studio/` symlinkle, Claude Code'da `/skills` listesinde görünmeli
-2. **Server testi**: Skill çalıştır, `curl http://127.0.0.1:7777/api/tree` → JSON, 5 kategori
-3. **Test vault**: `/Users/selma/youtube-brain` üzerinde aç — vault klasörü tree'de görünmeli, dosya açınca wiki link tıklanabilir olmalı
-4. **Patika testi**: Bu konuşmanın session.jsonl'ını parse et → bugün okunan/yazılan dosyalar tree üstünde sırayla highlight olmalı
-5. **Tema testi**: 3 tema arasında geçiş, customize ile `--accent` değiştir, refresh sonrası persist (localStorage)
-6. **Güvenlik testi**: `youtube-brain/projects/claude-computer-demo/.env` aç → değer mask'lı görünmeli, edit tuşu disabled
-7. **Path traversal testi**: `/api/file?path=../../etc/passwd` → 403 / reject
-8. **Browser testi**: Chrome + Safari + Firefox'ta render kontrol (özellikle CSS var animation)
+30 saniyelik gif:
+1. Terminal: `/plugin install trail@selmakcby`
+2. `/vault-studio` → browser açılır
+3. **Files tab**: bilinen file tree
+4. **Trail tab tıkla**: "Claude bu konuşmada şu dosyalara şu sırayla dokundu" — animasyonlu heatmap
+5. **Memory tab**: "Claude seni şöyle hatırlıyor" — type'lı kartlar
+6. **Agents tab**: "Sende 12 ajan var, en çok şunu kullanıyorsun" — kullanım grafiği
+7. Tema değiştir (editorial → terminal) — instant
 
-## Twitter Demo Hikayesi (post-MVP)
+Caption: *"Claude Code'la çalıştığında ne olduğunu ilk kez şeffaf hale getirdim. Hangi dosyalara dokundu, seni nasıl hatırlıyor, hangi ajanlar var — hepsi tek pencerede. Lokal, açık kaynak, plugin olarak kuruluyor."*
 
-30 saniyelik gif kurgusu:
-1. Terminal: `claude` → "vault studio aç"
-2. Browser açılır → file tree dolu, vault dosyaları görünür
-3. Tema değiştir (editorial → terminal) — instant
-4. "Claude'un patikası" overlay aç — dosyalar sırayla highlight
-5. Bir nota tık → markdown render, `[[link]]`'ler tıklanabilir
-6. Yeni not yaz → kaydet → sol tree'de görünür
+## Açık notlar / riskler
 
-Caption: "Vault'una arayüz yazdım. Claude Code skill olarak kurulu. 'Vault studio aç' diyince lokalde çalışıyor. Bonus: Claude'un projende hangi sırada nereyi gezdiğini gösteriyor."
-
-## V2 Backlog (MVP onaylandıktan sonra)
-
-- Claude zenginleştirme (LLM API key + organize/expand komutları)
-- Site-içi Q&A (RAG, vault embeddings)
-- Canlı patika stream (Claude Code çalışırken event hook)
-- Statik site export (vault → Vercel/Netlify deploy butonu)
-- İnteraktif kılavuz turu (ilk açılışta walk-through)
-- 4. tema (community-contributed)
-
-## Açık Notlar / Risk
-
-- **Bun bağımlılığı**: Skill çalışması için Bun kurulu olmalı. Selma'nın projelerinde `bun` zaten var ama yaygın olmayabilir. Alternatif: skill install adımında `curl bun.sh/install` öner.
-- **Session log şeması**: Claude Code session.jsonl formatı değişebilir. Path-parser'ı schema validation ile yaz, format değişirse graceful degrade (patika devre dışı, geri kalan çalışır).
-- **Çoklu vault**: MVP'de tek cwd. Kullanıcı başka projede `vault studio aç` derse yeni server instance — port çakışması olur. Çözüm: skill'i çağırınca önce 7777'i kontrol et, doluysa 7778, 7779...
-- **MIT lisans**: Açık kaynak GitHub repo (twitter post için zorunlu). Selma `selmakcby/vault-studio`.
+- **Session log şeması**: Claude Code `.jsonl` formatı değişebilir. Parser'ı defensive yaz, bilinmeyen tool'ları "other" olarak göster, schema fail olursa graceful degrade
+- **Path encoding**: `~/.claude/projects/-Users-selma-youtube-brain/` formatı doğrulanmalı (cwd → `cwd.replace(/\//g, '-')`)
+- **Memory dosya formatı**: Frontmatter (name/description/type) varsayımı doğrulanmalı; yoksa filename'den çıkarım
+- **Çoklu vault**: Aynı projede 2 instance → port çakışması; start.sh 7777-7790 arası deniyor
+- **Bun bağımlılığı**: Plugin install sonrası ilk tetikte kontrol, yoksa kurulum komutu öner
+- **MIT lisans + GitHub açık kaynak**: Twitter post için zorunlu, repo `selmakcby/trail`

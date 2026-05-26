@@ -1,0 +1,17 @@
+{
+  "name": "selmakcby",
+  "owner": {
+    "name": "Selma Kocabıyık",
+    "url": "https://github.com/selmakcby"
+  },
+  "plugins": [
+    {
+      "name": "trail",
+      "source": "./",
+      "description": "Claude Code'u gör · öğren · yönet — lokal observability + öğrenme aracı. Multi-project, 7 sekme.",
+      "version": "0.3.0",
+      "category": "productivity",
+      "tags": ["claude-code", "observability", "memory", "agents", "learning", "notes"]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "lessons": [
+    { "slug": "00-baslangic", "title": "Trail nedir, nasıl başla", "summary": "Bu pencerede ne göreceksin, neden ihtiyacın var", "estMin": 2, "level": "giriş" },
+    { "slug": "01-vault", "title": "Vault nedir, Claude'la nasıl çalışır", "summary": "Markdown vault kavramı, .claude/ klasörü, dosya organizasyonu", "estMin": 4, "level": "temel" },
+    { "slug": "02-skill", "title": "Skill nedir, nasıl yazılır", "summary": "Skill anatomy, frontmatter, örnek bir skill baştan sona", "estMin": 5, "level": "uygulama" },
+    { "slug": "03-agent", "title": "Agent nedir, ne zaman kullanılır", "summary": "Subagent vs skill farkı, agent tasarımı, system prompt ipuçları", "estMin": 5, "level": "uygulama" },
+    { "slug": "04-memory", "title": "Memory nasıl çalışır — 4 tür", "summary": "user / feedback / project / reference ayrımı, ne zaman ne ekler", "estMin": 4, "level": "temel" },
+    { "slug": "05-patika", "title": "Patika nasıl okunur", "summary": "Tool dağılımı, ısı haritası, scrubber — Claude'un izini takip etmek", "estMin": 3, "level": "vaultstudio" },
+    { "slug": "06-llm-wiki", "title": "LLM-Wiki stratejisi", "summary": "Vault'unu bilgi arşivine çevirme, ne zaman yeni dosya ne zaman update", "estMin": 6, "level": "ileri" }
+  ]
+}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trail — See, learn, manage Claude Code</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/base.css" />
+  <link id="theme-stylesheet" rel="stylesheet" href="/themes/soft-dark.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="/logo.svg" alt="" width="22" height="22" />
+        <div class="brand-text">
+          <div class="brand-name">Trail</div>
+          <div class="brand-tagline" data-i18n="brand_tagline">See · Learn · Manage Claude Code</div>
+        </div>
+      </div>
+      <div class="project-switcher" id="project-switcher">
+        <button class="project-switcher-trigger" id="project-trigger" aria-haspopup="listbox" aria-expanded="false">
+          <span class="project-switcher-label" id="project-active-name">…</span>
+          <span class="project-switcher-chevron">▾</span>
+        </button>
+        <div class="project-switcher-menu hidden" id="project-menu" role="listbox">
+          <div class="project-switcher-head">
+            <span class="project-switcher-title" data-i18n="project_switch_title">Switch project</span>
+            <span class="project-switcher-count" id="project-count"></span>
+          </div>
+          <input class="project-switcher-search" id="project-search" type="search" data-i18n-placeholder="project_search" placeholder="search…" />
+          <div class="project-switcher-list" id="project-list"></div>
+        </div>
+      </div>
+      <nav class="tabs" id="tabs">
+        <button class="tab" data-tab="notes" data-i18n="tab_notes" data-i18n-title="tab_notes_hint">Notes</button>
+        <button class="tab active" data-tab="files" data-i18n="tab_files" data-i18n-title="tab_files_hint">Files</button>
+        <button class="tab" data-tab="trail" data-i18n="tab_trail" data-i18n-title="tab_trail_hint">Trail</button>
+        <button class="tab" data-tab="memory" data-i18n="tab_memory" data-i18n-title="tab_memory_hint">Memory</button>
+        <button class="tab" data-tab="agents" data-i18n="tab_agents" data-i18n-title="tab_agents_hint">Agents</button>
+        <button class="tab" data-tab="sessions" data-i18n="tab_history" data-i18n-title="tab_history_hint">History</button>
+        <button class="tab" data-tab="guide" data-i18n="tab_guide" data-i18n-title="tab_guide_hint">Guide</button>
+      </nav>
+      <div class="topbar-actions">
+        <div class="lang-switch" id="lang-switch" role="radiogroup" aria-label="language">
+          <button class="lang-opt" data-lang="en" role="radio">EN</button>
+          <button class="lang-opt" data-lang="tr" role="radio">TR</button>
+        </div>
+        <div class="theme-switch" role="radiogroup" aria-label="theme">
+          <button class="theme-opt" data-theme="soft-dark" role="radio" aria-checked="true" data-i18n="theme_dark" title="Dark — modern">Dark</button>
+          <button class="theme-opt" data-theme="editorial" role="radio" aria-checked="false" data-i18n="theme_cream" title="Cream — editorial">Cream</button>
+          <button class="theme-opt" data-theme="terminal" role="radio" aria-checked="false" data-i18n="theme_term" title="Terminal — modern terminal">Term</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="tab-content" id="tab-content">
+      <div class="loading" data-i18n="status_loading">loading…</div>
+    </main>
+
+    <footer class="statusbar">
+      <span class="status-item" id="status-msg" data-i18n="status_ready">ready</span>
+      <span class="status-item status-muted status-tagline" data-i18n="brand_tagline">See · Learn · Manage Claude Code</span>
+      <span class="status-spacer"></span>
+      <button class="status-toggle" id="welcome-reopen" data-i18n="btn_guide_help" data-i18n-title="btn_guide_help">guide</button>
+      <button class="status-toggle" id="refresh-toggle" data-i18n-title="btn_auto_refresh_tooltip">
+        <span class="dot"></span>
+        <span class="label" data-i18n="btn_auto_refresh">auto refresh</span>
+      </button>
+      <span class="status-item status-muted" id="vault-path">…</span>
+      <span class="status-item status-muted">v0.3.0 · <a href="https://github.com/selmakcby/trail" target="_blank" rel="noopener noreferrer">github</a></span>
+    </footer>
+  </div>
+
+  <!-- Welcome overlay (first run) -->
+  <div id="welcome" class="welcome hidden" aria-hidden="true">
+    <div class="welcome-backdrop"></div>
+    <div class="welcome-panel" role="dialog" aria-labelledby="welcome-title">
+      <button class="welcome-close" id="welcome-skip" aria-label="close">×</button>
+      <div class="welcome-head">
+        <img class="welcome-logo" src="/logo.svg" alt="" width="36" height="36" />
+        <div>
+          <h1 class="welcome-title" id="welcome-title" data-i18n="welcome_title">Welcome to Trail</h1>
+          <p class="welcome-sub" data-i18n="welcome_sub" data-i18n-html></p>
+        </div>
+      </div>
+      <ul class="welcome-tabs" id="welcome-tabs">
+        <li><span class="welcome-tab-name" data-i18n="tab_notes">Notes</span> <span data-i18n="welcome_tab_notes_desc" data-i18n-html></span></li>
+        <li><span class="welcome-tab-name" data-i18n="tab_files">Files</span> <span data-i18n="welcome_tab_files_desc" data-i18n-html></span></li>
+        <li><span class="welcome-tab-name" data-i18n="tab_trail">Trail</span> <span data-i18n="welcome_tab_trail_desc" data-i18n-html></span></li>
+        <li><span class="welcome-tab-name" data-i18n="tab_memory">Memory</span> <span data-i18n="welcome_tab_memory_desc" data-i18n-html></span></li>
+        <li><span class="welcome-tab-name" data-i18n="tab_agents">Agents</span> <span data-i18n="welcome_tab_agents_desc" data-i18n-html></span></li>
+        <li><span class="welcome-tab-name" data-i18n="tab_history">History</span> <span data-i18n="welcome_tab_history_desc" data-i18n-html></span></li>
+        <li><span class="welcome-tab-name" data-i18n="tab_guide">Guide</span> <span data-i18n="welcome_tab_guide_desc" data-i18n-html></span></li>
+      </ul>
+      <div class="welcome-footer">
+        <div class="welcome-meta" data-i18n="welcome_meta" data-i18n-html></div>
+        <div class="welcome-cta-group">
+          <button class="btn" id="welcome-skip-files" data-i18n="welcome_cta_skip">skip, go to Files</button>
+          <button class="btn btn-primary" id="welcome-start" data-i18n="welcome_cta_start">Start with the Guide →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

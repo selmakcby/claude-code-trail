@@ -1,0 +1,13 @@
+{
+  "name": "trail",
+  "version": "0.3.0",
+  "description": "Claude Code'u gör · öğren · yönet — lokal, açık kaynak. 7 sekme: Notlar, Dosyalar, Patika (Claude'un session içi izini), Bellek, Ajanlar, Geçmiş (mesaj replay), Kılavuz (7 ders). Multi-project.",
+  "author": {
+    "name": "Selma Kocabıyık",
+    "url": "https://github.com/selmakcby"
+  },
+  "homepage": "https://github.com/selmakcby/trail",
+  "repository": "https://github.com/selmakcby/trail",
+  "license": "MIT",
+  "keywords": ["claude-code", "observability", "trail", "memory", "agents", "learning"]
+}

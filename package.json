@@ -1,0 +1,16 @@
+{
+  "name": "trail",
+  "version": "0.3.0",
+  "description": "Claude Code'u gör · öğren · yönet — lokal observability + öğrenme aracı",
+  "type": "module",
+  "scripts": {
+    "start": "bun server/index.ts",
+    "dev": "VAULT_DIR=$PWD PORT=7777 bun server/index.ts"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "license": "MIT",
+  "author": "Selma Kocabıyık",
+  "repository": "https://github.com/selmakcby/trail"
+}

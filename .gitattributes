@@ -1,0 +1,12 @@
+# Tek line ending standardı
+* text=auto eol=lf
+
+# Shell script'ler her zaman LF
+*.sh text eol=lf
+
+# Binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.svg text

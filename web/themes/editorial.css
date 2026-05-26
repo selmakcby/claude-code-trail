@@ -1,0 +1,47 @@
+/* Editorial — krem/terracotta, paper-like, refined */
+:root {
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Monaco', monospace;
+
+  --bg: #ede9d8;
+  --bg-bar: #e6e1ce;
+  --bg-sidebar: #ece8d6;
+  --bg-content: #ede9d8;
+  --bg-content-bar: #e6e1ce;
+  --bg-hover: rgba(26, 26, 26, 0.05);
+  --bg-input: #f5f1e3;
+  --bg-callout: #f1ecd9;
+  --bg-code: #f5f1e3;
+  --bg-code-inline: #e6e1ce;
+
+  --text: #1a1a1a;
+  --text-2: #4a4842;
+  --text-3: #7d7a72;
+
+  --border: rgba(26, 26, 26, 0.1);
+
+  --accent: #c97b5a;
+  --accent-deep: #a85e3f;
+  --accent-soft: rgba(201, 123, 90, 0.13);
+  --accent-text: #fffaf0;
+
+  --danger: #b8473d;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(201, 123, 90, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 88% 82%, rgba(168, 94, 63, 0.05) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#app { position: relative; z-index: 1; }
+
+.markdown-render h1,
+.markdown-render h2 {
+  letter-spacing: -0.025em;
+}
