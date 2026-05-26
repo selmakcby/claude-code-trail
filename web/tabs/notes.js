@@ -22,8 +22,14 @@ function setSaveState(state) {
   }[state] || "";
 }
 
-export async function renderNotesTab(container) {
-  setStatus(t("notes_loading"));
+export async function renderNotesTab(container, opts = {}) {
+  const silent = opts.silent === true;
+  // Skip silent refresh while a note is open — re-rendering the textarea
+  // would discard the user's in-progress edits (auto-save fires every
+  // ~1.2s, but anything typed within that window would be lost).
+  if (silent && LOCAL?.selectedFile) return;
+
+  if (!silent) setStatus(t("notes_loading"));
   let data;
   try {
     data = await api("/api/notes");

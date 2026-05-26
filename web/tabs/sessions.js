@@ -68,10 +68,21 @@ function fmtDuration(start, end) {
   return getLang() === "tr" ? `${h}sa${m % 60}dk` : `${h}h${m % 60}m`;
 }
 
-export async function renderSessionsTab(container) {
-  setStatus(t("history_loading"));
+export async function renderSessionsTab(container, opts = {}) {
+  const silent = opts.silent === true;
+  const prev = LOCAL;
+
+  if (!silent) setStatus(t("history_loading"));
   const sessions = await api("/api/sessions");
-  LOCAL = { sessions, selectedId: null, view: "patika", detailCache: new Map(), convCache: new Map() };
+  // Preserve selection + view + caches across silent re-renders so the
+  // auto-refresh (every 10s) doesn't bounce the user back to the placeholder.
+  LOCAL = {
+    sessions,
+    selectedId: prev?.selectedId ?? null,
+    view: prev?.view ?? "patika",
+    detailCache: prev?.detailCache ?? new Map(),
+    convCache: prev?.convCache ?? new Map(),
+  };
 
   if (sessions.length === 0) {
     container.innerHTML = `
@@ -107,7 +118,16 @@ export async function renderSessionsTab(container) {
   `;
 
   renderList();
-  setStatus(t("history_count", sessions.length));
+
+  // Restore previous selection if still valid
+  if (LOCAL.selectedId && sessions.some((s) => s.id === LOCAL.selectedId)) {
+    document.querySelectorAll(".session-card").forEach((c) =>
+      c.classList.toggle("active", c.dataset.id === LOCAL.selectedId),
+    );
+    await renderDetail();
+  }
+
+  if (!silent) setStatus(t("history_count", sessions.length));
 }
 
 function renderList() {

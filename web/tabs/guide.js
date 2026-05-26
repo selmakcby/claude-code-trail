@@ -23,8 +23,11 @@ function saveProgress(slug) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
 }
 
-export async function renderGuideTab(container) {
-  setStatus(t("guide_loading"));
+export async function renderGuideTab(container, opts = {}) {
+  const silent = opts.silent === true;
+  // If a lesson is open, don't tear down the reader on silent refresh.
+  if (silent && LOCAL?.selectedSlug) return;
+  if (!silent) setStatus(t("guide_loading"));
   const indexRes = await fetch("/docs/_index.json");
   if (!indexRes.ok) throw new Error(t("guide_index_failed"));
   const index = await indexRes.json();

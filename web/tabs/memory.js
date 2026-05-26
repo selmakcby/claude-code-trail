@@ -28,10 +28,17 @@ function fmtRel(mtimeMs) {
   return `${d}d`;
 }
 
-export async function renderMemoryTab(container) {
-  setStatus(t("status_loading"));
+export async function renderMemoryTab(container, opts = {}) {
+  const silent = opts.silent === true;
+  const prev = LOCAL;
+  if (!silent) setStatus(t("status_loading"));
   const data = await api("/api/memory");
-  LOCAL = { data, activeType: "all", selectedFile: null };
+  // Preserve type filter + selection across silent re-renders
+  LOCAL = {
+    data,
+    activeType: prev?.activeType ?? "all",
+    selectedFile: prev?.selectedFile ?? null,
+  };
 
   if (!data.exists) {
     container.innerHTML = `
@@ -60,9 +67,9 @@ export async function renderMemoryTab(container) {
         <div class="page-header-toolbar">
           <span class="page-header-meta">${t("memory_total", total)}<code>${escapeHtml(data.memoryDir)}</code></span>
           <div class="memory-type-filter">
-            <button class="type-chip active" data-type="all">${escapeHtml(t("btn_all"))} (${total})</button>
+            <button class="type-chip ${LOCAL.activeType === "all" ? "active" : ""}" data-type="all">${escapeHtml(t("btn_all"))} (${total})</button>
             ${TYPE_ORDER.filter((tp) => counts[tp] > 0).map((tp) => `
-              <button class="type-chip type-${tp}" data-type="${tp}">${escapeHtml(typeLabel(tp))} (${counts[tp]})</button>
+              <button class="type-chip type-${tp} ${LOCAL.activeType === tp ? "active" : ""}" data-type="${tp}">${escapeHtml(typeLabel(tp))} (${counts[tp]})</button>
             `).join("")}
           </div>
         </div>
@@ -165,6 +172,11 @@ export async function renderMemoryTab(container) {
   });
 
   renderList();
+
+  // Restore selection if still valid
+  if (LOCAL.selectedFile && LOCAL.data.items.some((it) => it.file === LOCAL.selectedFile)) {
+    selectMemory(LOCAL.selectedFile);
+  }
 }
 
 async function createMemory() {

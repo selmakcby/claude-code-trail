@@ -62,8 +62,9 @@ function shortPath(p) {
   return p.length > 60 ? "…" + p.slice(-58) : p;
 }
 
-export async function renderTrailTab(container) {
-  setStatus(t("status_loading"));
+export async function renderTrailTab(container, opts = {}) {
+  const silent = opts.silent === true;
+  if (!silent) setStatus(t("status_loading"));
   const data = await api("/api/trail/current");
   if (data?.empty) {
     container.innerHTML = `

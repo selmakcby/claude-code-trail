@@ -14,7 +14,12 @@ function escapeHtml(s) {
   );
 }
 
-export async function renderFilesTab(container) {
+export async function renderFilesTab(container, opts = {}) {
+  const silent = opts.silent === true;
+  const prev = LOCAL;
+  // While the user is editing, the auto-refresh must not blow away
+  // their unsaved changes by tearing down the textarea.
+  if (silent && prev?.isEditing) return;
   container.innerHTML = `
     <div class="files-wrap">
       <div class="page-header page-header-compact">
@@ -61,18 +66,32 @@ export async function renderFilesTab(container) {
   LOCAL = {
     tree: null,
     filesByPath: new Map(),
-    currentPath: null,
-    currentContent: "",
-    currentProtected: false,
-    isEditing: false,
-    category: "all",
+    currentPath: prev?.currentPath ?? null,
+    currentContent: prev?.currentContent ?? "",
+    currentProtected: prev?.currentProtected ?? false,
+    isEditing: prev?.isEditing ?? false,
+    category: prev?.category ?? "all",
   };
+
+  // Restore active category chip
+  container.querySelectorAll(".cat-btn").forEach((b) =>
+    b.classList.toggle("active", b.dataset.cat === LOCAL.category),
+  );
 
   const tree = await api("/api/tree");
   LOCAL.tree = tree;
   indexFiles(tree, LOCAL.filesByPath);
   renderTree();
-  setStatus(`${LOCAL.filesByPath.size} dosya`);
+  if (!silent) setStatus(`${LOCAL.filesByPath.size} files`);
+
+  // Re-show currently open file (read-only path: no network re-fetch)
+  if (LOCAL.currentPath && LOCAL.filesByPath.has(LOCAL.currentPath)) {
+    document.querySelector("#open-path").textContent = LOCAL.currentPath;
+    const toggleBtn = document.querySelector("#toggle-edit-btn");
+    toggleBtn.disabled = LOCAL.currentProtected;
+    renderContent();
+    highlightActive();
+  }
 
   container.querySelectorAll(".cat-btn").forEach((b) => {
     b.addEventListener("click", () => {

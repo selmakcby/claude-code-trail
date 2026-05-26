@@ -14,8 +14,11 @@ function fmtRel(iso) {
   return fmtRelTime(iso, "long");
 }
 
-export async function renderAgentsTab(container) {
-  setStatus(t("agents_loading"));
+export async function renderAgentsTab(container, opts = {}) {
+  const silent = opts.silent === true;
+  const prev = LOCAL;
+
+  if (!silent) setStatus(t("agents_loading"));
   const agents = await api("/api/agents");
 
   if (agents.length === 0) {
@@ -29,7 +32,12 @@ export async function renderAgentsTab(container) {
     return;
   }
 
-  LOCAL = { agents, selectedName: null, scopeFilter: "all" };
+  // Preserve selection + filter across silent re-renders (auto-refresh).
+  LOCAL = {
+    agents,
+    selectedName: prev?.selectedName ?? null,
+    scopeFilter: prev?.scopeFilter ?? "all",
+  };
 
   const used = agents.filter((a) => a.usageCount > 0);
   const unused = agents.filter((a) => a.usageCount === 0);
@@ -49,11 +57,11 @@ export async function renderAgentsTab(container) {
           </p>
         </div>
         <div class="agents-filter">
-          <button class="type-chip active" data-scope="all">${escapeHtml(t("agents_filter_all_count", agents.length))}</button>
-          <button class="type-chip" data-scope="project">${escapeHtml(t("agents_filter_project_count", projectCount))}</button>
-          <button class="type-chip" data-scope="global">${escapeHtml(t("agents_filter_global_count", globalCount))}</button>
-          <button class="type-chip" data-scope="used">${escapeHtml(t("agents_filter_used_count", used.length))}</button>
-          <button class="type-chip" data-scope="unused">${escapeHtml(t("agents_filter_unused_count", unused.length))}</button>
+          <button class="type-chip ${LOCAL.scopeFilter === "all" ? "active" : ""}" data-scope="all">${escapeHtml(t("agents_filter_all_count", agents.length))}</button>
+          <button class="type-chip ${LOCAL.scopeFilter === "project" ? "active" : ""}" data-scope="project">${escapeHtml(t("agents_filter_project_count", projectCount))}</button>
+          <button class="type-chip ${LOCAL.scopeFilter === "global" ? "active" : ""}" data-scope="global">${escapeHtml(t("agents_filter_global_count", globalCount))}</button>
+          <button class="type-chip ${LOCAL.scopeFilter === "used" ? "active" : ""}" data-scope="used">${escapeHtml(t("agents_filter_used_count", used.length))}</button>
+          <button class="type-chip ${LOCAL.scopeFilter === "unused" ? "active" : ""}" data-scope="unused">${escapeHtml(t("agents_filter_unused_count", unused.length))}</button>
         </div>
       </header>
 
@@ -81,7 +89,13 @@ export async function renderAgentsTab(container) {
   });
 
   renderList();
-  setStatus(t("agents_count", agents.length));
+
+  // Restore previous selection if still valid
+  if (LOCAL.selectedName && agents.some((a) => a.name === LOCAL.selectedName)) {
+    selectAgent(LOCAL.selectedName);
+  }
+
+  if (!silent) setStatus(t("agents_count", agents.length));
 }
 
 function filteredAgents() {

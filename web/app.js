@@ -138,7 +138,7 @@ async function renderCurrentTab(silent = false) {
   const container = $("#tab-content");
   if (!silent) container.innerHTML = `<div class="loading">${escapeHtml(t("status_loading"))}</div>`;
   try {
-    await TABS[tab](container);
+    await TABS[tab](container, { silent });
   } catch (e) {
     container.innerHTML = `<div class="error-panel">
       <div class="error-title">${escapeHtml(t("err_tab_fail", { tab }))}</div>
