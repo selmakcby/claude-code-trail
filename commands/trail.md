@@ -1,10 +1,24 @@
 ---
-description: Open Trail (Claude Code observability + learning UI, local :7777, in browser)
+description: Open Trail — local web UI that shows what Claude Code did in this project (sessions, memory, agents, files). Runs at http://localhost:7777.
 argument-hint: "[port?]"
 allowed-tools: Bash(bash:*)
 ---
 
-Start Trail for the current working directory. If a Trail server is already running, just opens the browser pointed at the current project (no new server spawned).
+# Open Trail for the current project
+
+Trail is a fully local web UI (port 7777, `127.0.0.1` only — no LLM calls, nothing leaves the machine) that lets the user **see, learn, and manage** what Claude Code has been doing in their projects:
+
+- **Trail tab** — the active session's tool calls in chronological order
+- **History tab** — every past Claude Code session, replayable as conversation or tool path
+- **Memory tab** — how Claude remembers the user (user / feedback / project / reference)
+- **Agents tab** — project + global subagents, with usage stats
+- **Files tab** — markdown viewer/editor with `.env` masking
+- **Notes tab** — quick markdown notes saved into a `notes/` folder in the vault
+- **Guide tab** — built-in 7-lesson onboarding to Claude Code concepts
+
+The server discovers all of the user's Claude Code projects (from `~/.claude/projects/`) automatically; the user picks one from the top-left dropdown without restarting.
+
+## Step 1 — start (or reattach to) the server
 
 ```bash
 # Resolve plugin root — 4 fallbacks (most to least common):
@@ -29,14 +43,14 @@ if [ -z "$PLUGIN_DIR" ] && [ -L "$HOME/.claude/skills/trail" ]; then
 fi
 
 if [ -z "$PLUGIN_DIR" ] || [ ! -d "$PLUGIN_DIR/scripts" ]; then
-  echo "Trail: plugin yolu bulunamadı."
+  echo "Trail: plugin path not found."
   echo ""
-  echo "Plugin cache eskiyse yenile:"
+  echo "If the plugin cache is stale, reinstall:"
   echo "  /plugin uninstall trail@selmakcby"
   echo "  /plugin install trail@selmakcby"
   echo "  /reload-plugins"
   echo ""
-  echo "Veya marketplace'de değilse:"
+  echo "Or, if it isn't in your marketplace list yet:"
   echo "  /plugin marketplace add selmakcby/claude-code-trail"
   exit 1
 fi
@@ -44,4 +58,18 @@ fi
 bash "$PLUGIN_DIR/scripts/start.sh" "${1:-7777}"
 ```
 
-After server starts, tell the user the URL. From the top-left dropdown they can switch between Claude projects. Stop with `Ctrl+C` in the terminal.
+## Step 2 — tell the user what just happened
+
+After the script prints the URL, tell the user:
+
+1. The Trail URL (e.g. `http://localhost:7777`). If the script said "already running", mention that Trail attached to the existing server instead of spawning a new one.
+2. They can **switch between Claude projects from the top-left dropdown** — Trail discovered every Claude Code project on this machine, not just the current one.
+3. **First visit:** a Welcome overlay will appear. It explains the 7 tabs. They can skip it or start with the built-in Guide.
+4. **Language:** Trail's default UI is English; there's an EN/TR toggle top-right if they prefer Turkish.
+5. **To stop:** `Ctrl+C` in this terminal.
+
+If the user asks what each tab does, the Guide tab covers it in 7 short lessons. Don't repeat all of that here — point them to it.
+
+If they're on Safari and see "page address isn't valid", remind them Safari auto-prefixes `127.0.0.1` with `www.` — they should type `http://localhost:7777` instead.
+
+If they don't have Bun installed and the script reported it, the install command is `curl -fsSL https://bun.sh/install | bash`.

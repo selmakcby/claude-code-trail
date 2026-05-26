@@ -1,7 +1,32 @@
 # Changelog
 
-Tüm önemli değişiklikler bu dosyada belgelenir.
+All notable changes are documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com), semver: [SemVer](https://semver.org).
+
+## [0.3.1] — 2026-05-26
+
+### Changed — universal-readiness release
+
+This release makes Trail work cleanly on **any** Claude Code user's machine, not just Selma's setup. Nothing functional changed for existing users; this is a portability + i18n pass.
+
+- **Default UI language is English**; Turkish is a one-click toggle (top-right).
+- **All server-side error strings → English.** UI maps them to localized labels via the existing i18n table; unknown errors now fall back to English instead of Turkish.
+- **`notlar/` folder → backward-compat `notes/`/`notlar/`/`Notes/` detection.** New users get `notes/`; existing Turkish users keep their `notlar/` content.
+- **Default new-note title → "New note"** (server fallback when UI doesn't pass a title).
+- **`start.sh` is fully English** — startup logs, error messages, Bun install hints.
+- **`commands/trail.md` rewritten as an onboarding flow** — when the user runs `/trail`, the body now teaches Claude what Trail is so it can explain the tabs, language toggle, and project-switcher to the user accurately.
+- **`skills/trail/SKILL.md` triggers expanded** — English-first trigger phrases plus Turkish and "vault studio aç" (legacy name) kept for back-compat.
+- **`plugin.json` / `marketplace.json` descriptions** are English-first so the marketplace install dialog reads cleanly for any user.
+- **VAULT_DIR sanity check in `start.sh`** — refuses system-shallow paths (`/`, `/Users`, `/tmp`, `/home`, `/root`, …) and tells the user to either `cd` into a real project or switch project from the UI dropdown.
+- **`listNotes` no longer auto-creates the notes folder** — it probes and reports `writable: true/false`. The folder is created only when the first note is saved. Fixes the bug where landing on Notes from a wrong-vault project would scatter empty `notes/` dirs.
+- **Notes tab shows a friendly empty state** when `writable: false` (e.g. user is in a non-project shallow path).
+- **Full i18n coverage** for Notes / Agents / History / Guide tabs (was: only Files + Trail in 0.3.0).
+
+### Open known limitations
+
+- **Windows native** is not supported — the launcher is bash. WSL or git-bash works.
+- **Bun >= 1.0** must be installed (the launcher emits the install command if missing).
+- **`session.jsonl` schema** is undocumented; future Anthropic changes could need a parser update.
 
 ## [0.3.0] — 2026-05-25
 

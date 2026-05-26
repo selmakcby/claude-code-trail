@@ -40,20 +40,20 @@ export function setStatus(msg) {
 }
 
 const HUMAN_ERROR_KEYS = {
-  "Vault dışı yol": "err_human_outside_vault",
-  "Bu dosya readonly (secret-guard)": "err_human_readonly_secret",
-  "Dosya bulunamadı": "err_human_not_found",
-  "Bu bir klasör": "err_human_is_dir",
-  "Bilinmeyen endpoint": "err_human_unknown_endpoint",
-  "session bulunamadı": "err_human_session_missing",
-  "MEMORY.md silinemez": "err_human_memory_index_protected",
-  "geçersiz dosya adı": "err_human_invalid_filename",
+  "Path outside vault": "err_human_outside_vault",
+  "File is readonly (secret-guard)": "err_human_readonly_secret",
+  "File not found": "err_human_not_found",
+  "This is a directory": "err_human_is_dir",
+  "Unknown endpoint": "err_human_unknown_endpoint",
+  "session not found": "err_human_session_missing",
+  "MEMORY.md cannot be deleted": "err_human_memory_index_protected",
+  "invalid file name": "err_human_invalid_filename",
 };
 
 function humanizeError(msg) {
   if (HUMAN_ERROR_KEYS[msg]) return t(HUMAN_ERROR_KEYS[msg]);
-  if (/^Bu uzantıya yazma izni yok/.test(msg)) return t("err_human_ext_not_allowed");
-  if (/çok büyük/.test(msg)) return t("err_human_too_big");
+  if (/^Cannot write to this extension/.test(msg)) return t("err_human_ext_not_allowed");
+  if (/too large/i.test(msg)) return t("err_human_too_big");
   return msg;
 }
 

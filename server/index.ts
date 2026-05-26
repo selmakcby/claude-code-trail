@@ -47,7 +47,7 @@ async function resolveVaultDir(url: URL): Promise<string> {
   const abs = resolve(requested);
   await refreshAllowedVaults();
   if (!allowedVaultDirs.has(abs)) {
-    throw new Error(`İzinsiz proje yolu (${abs}). Önce keşfedilmeli.`);
+    throw new Error(`Disallowed project path (${abs}). Must be discovered first.`);
   }
   return abs;
 }
@@ -167,7 +167,7 @@ async function handleApi(req: Request, url: URL): Promise<Response> {
   // GET /api/file?path=/foo/bar.md
   if (url.pathname === "/api/file" && req.method === "GET") {
     const path = url.searchParams.get("path");
-    if (!path) return err("path query param zorunlu");
+    if (!path) return err("path query param required");
     try {
       const data = await readFileSafe(vault, path);
       return ok(data);
@@ -180,10 +180,10 @@ async function handleApi(req: Request, url: URL): Promise<Response> {
   // PUT /api/file?path=/foo/bar.md   body: { content: "..." }
   if (url.pathname === "/api/file" && req.method === "PUT") {
     const path = url.searchParams.get("path");
-    if (!path) return err("path query param zorunlu");
+    if (!path) return err("path query param required");
     let body: { content?: string };
-    try { body = await req.json(); } catch { return err("JSON body zorunlu"); }
-    if (typeof body.content !== "string") return err("content string olmalı");
+    try { body = await req.json(); } catch { return err("JSON body required"); }
+    if (typeof body.content !== "string") return err("content must be a string");
     try {
       const data = await writeFileSafe(vault, path, body.content);
       return ok(data);
@@ -217,7 +217,7 @@ async function handleApi(req: Request, url: URL): Promise<Response> {
     try {
       const all = await listSessionFiles(vault);
       const target = all.find((s) => s.id === id);
-      if (!target) return err("session bulunamadı", 404);
+      if (!target) return err("session not found", 404);
       const detail = await parseSession(target.path, vault);
       return ok(detail);
     } catch (e) { return err((e as Error).message, 500); }
@@ -230,7 +230,7 @@ async function handleApi(req: Request, url: URL): Promise<Response> {
     try {
       const all = await listSessionFiles(vault);
       const target = all.find((s) => s.id === id);
-      if (!target) return err("session bulunamadı", 404);
+      if (!target) return err("session not found", 404);
       const conv = await parseConversation(target.path);
       return ok(conv);
     } catch (e) { return err((e as Error).message, 500); }
@@ -245,10 +245,10 @@ async function handleApi(req: Request, url: URL): Promise<Response> {
   // POST /api/memory
   if (url.pathname === "/api/memory" && req.method === "POST") {
     let body: { title?: string; description?: string; type?: string; body?: string };
-    try { body = await req.json(); } catch { return err("JSON body zorunlu"); }
-    if (!body.title || !body.type) return err("title ve type zorunlu");
+    try { body = await req.json(); } catch { return err("JSON body required"); }
+    if (!body.title || !body.type) return err("title and type required");
     const allowed: MemoryType[] = ["user", "feedback", "project", "reference", "other"];
-    if (!allowed.includes(body.type as MemoryType)) return err("geçersiz type");
+    if (!allowed.includes(body.type as MemoryType)) return err("invalid type");
     try {
       const result = await createMemoryFile(vault, {
         title: body.title,
@@ -263,10 +263,10 @@ async function handleApi(req: Request, url: URL): Promise<Response> {
   // PUT /api/memory
   if (url.pathname === "/api/memory" && req.method === "PUT") {
     const file = url.searchParams.get("file");
-    if (!file) return err("file query param zorunlu");
+    if (!file) return err("file query param required");
     let body: { content?: string };
-    try { body = await req.json(); } catch { return err("JSON body zorunlu"); }
-    if (typeof body.content !== "string") return err("content string olmalı");
+    try { body = await req.json(); } catch { return err("JSON body required"); }
+    if (typeof body.content !== "string") return err("content must be a string");
     try {
       await writeMemoryFile(vault, file, body.content);
       const data = await readMemoryFile(vault, file);
@@ -277,7 +277,7 @@ async function handleApi(req: Request, url: URL): Promise<Response> {
   // DELETE /api/memory
   if (url.pathname === "/api/memory" && req.method === "DELETE") {
     const file = url.searchParams.get("file");
-    if (!file) return err("file query param zorunlu");
+    if (!file) return err("file query param required");
     try {
       await deleteMemoryFile(vault, file);
       return ok({ deleted: file });
@@ -301,7 +301,7 @@ async function handleApi(req: Request, url: URL): Promise<Response> {
   // DELETE /api/notes
   if (url.pathname === "/api/notes" && req.method === "DELETE") {
     const file = url.searchParams.get("file");
-    if (!file) return err("file query param zorunlu");
+    if (!file) return err("file query param required");
     try { await deleteNote(vault, file); return ok({ deleted: file }); }
     catch (e) { return err((e as Error).message, 500); }
   }
@@ -324,7 +324,7 @@ async function handleApi(req: Request, url: URL): Promise<Response> {
     }
   }
 
-  return err("Bilinmeyen endpoint", 404);
+  return err("Unknown endpoint", 404);
 }
 
 // Sadece localhost'tan gelen isteklere izin ver (defense in depth)

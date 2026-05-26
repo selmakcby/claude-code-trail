@@ -1,16 +1,23 @@
 import { readdir, mkdir, stat, readFile, writeFile, unlink } from "node:fs/promises";
 import { join, relative, basename } from "node:path";
 
-// Notlar klasörü: vault root içinde /notlar/
-// (Mevcutsa kullanılır, yoksa otomatik oluşturulur)
-const NOTES_DIR_NAME = "notlar";
+// Notes folder location inside the vault.
+// Backward-compat: if the user already has `notlar/` (Turkish legacy from
+// early Trail versions), use it. Otherwise default to language-neutral `notes/`.
+const NOTES_DIR_CANDIDATES = ["notes", "notlar", "Notes"];
+const NOTES_DIR_DEFAULT = "notes";
 
-function notesDirPath(vaultDir: string): string {
-  return join(vaultDir, NOTES_DIR_NAME);
+async function notesDirPath(vaultDir: string): Promise<string> {
+  for (const name of NOTES_DIR_CANDIDATES) {
+    const candidate = join(vaultDir, name);
+    const s = await stat(candidate).catch(() => null);
+    if (s && s.isDirectory()) return candidate;
+  }
+  return join(vaultDir, NOTES_DIR_DEFAULT);
 }
 
 export async function ensureNotesDir(vaultDir: string): Promise<string> {
-  const dir = notesDirPath(vaultDir);
+  const dir = await notesDirPath(vaultDir);
   await mkdir(dir, { recursive: true });
   return dir;
 }
@@ -21,7 +28,7 @@ export async function ensureNotesDir(vaultDir: string): Promise<string> {
 // projeye girip listeyi açan kullanıcı, istemediği yerlere `notlar/`
 // klasörü dağıtmaz; not oluşturduğunda createNote() klasörü oluşturur.
 async function probeNotesDir(vaultDir: string): Promise<{ dir: string; exists: boolean; writable: boolean }> {
-  const dir = notesDirPath(vaultDir);
+  const dir = await notesDirPath(vaultDir);
   const s = await stat(dir).catch(() => null);
   if (s && s.isDirectory()) {
     // Mevcut klasör — yazılabilir mi?
@@ -127,8 +134,8 @@ export interface CreatedNote {
 
 export async function deleteNote(vaultDir: string, file: string): Promise<void> {
   const safe = basename(file);
-  if (!/^[A-Za-z0-9._-]+$/.test(safe)) throw new Error("geçersiz dosya adı");
-  if (!safe.endsWith(".md")) throw new Error("sadece .md");
+  if (!/^[A-Za-z0-9._-]+$/.test(safe)) throw new Error("invalid file name");
+  if (!safe.endsWith(".md")) throw new Error("only .md files");
   const absDir = await ensureNotesDir(vaultDir);
   await unlink(join(absDir, safe));
 }
@@ -144,7 +151,7 @@ export async function createNote(
   const filename = slug ? `${stamp}-${slug}.md` : `${stamp}.md`;
   const abs = join(absDir, filename);
 
-  const displayTitle = cleanTitle || "Yeni not";
+  const displayTitle = cleanTitle || "New note";
   const initial = `# ${displayTitle}\n\n`;
   await writeFile(abs, initial, "utf-8");
 

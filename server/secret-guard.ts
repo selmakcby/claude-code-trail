@@ -53,11 +53,11 @@ export function maskFileContent(fileName: string, content: string): string {
   }
   // .pem, .key gibi binary-ish dosyalar için tamamen maskele
   if (/\.(pem|key|p12|pfx)$/i.test(fileName)) {
-    return `[Bu dosya hassas içerik barındırıyor. İçerik gizlendi.]\n\nDosya boyutu: ${content.length} byte`;
+    return `[Sensitive file — body hidden.]\n\nFile size: ${content.length} bytes`;
   }
   // SSH private key başlangıcı algılanırsa maskele
   if (/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(content)) {
-    return "[SSH/PGP private key tespit edildi. İçerik gizlendi.]";
+    return "[SSH/PGP private key detected — body hidden.]";
   }
   return content;
 }

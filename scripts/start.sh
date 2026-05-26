@@ -1,38 +1,38 @@
 #!/usr/bin/env bash
-# Trail başlatıcı
-# Kullanım: start.sh [port]
+# Trail launcher
+# Usage: start.sh [port]
 #
-# Akıllı davranış:
-# - Eğer 7777'de zaten bir Trail server çalışıyorsa, yeni server başlatmaz —
-#   sadece browser'ı açar (verilen proje URL parametresiyle gelir).
-# - Yoksa: yeni server başlatır, browser açar.
+# Smart behavior:
+# - If a Trail server is already running on 7777, just opens the browser
+#   pointed at the current project (no new server spawned).
+# - Otherwise: starts a new server, opens the browser.
 
 set -e
 
 START_PORT="${1:-${PORT:-7777}}"
 MAX_PORT=$((START_PORT + 20))
 VAULT_DIR="${VAULT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}"
-VAULT_DIR="$(cd "$VAULT_DIR" 2>/dev/null && pwd)" || { echo "Trail: VAULT_DIR bulunamadı: $VAULT_DIR"; exit 1; }
+VAULT_DIR="$(cd "$VAULT_DIR" 2>/dev/null && pwd)" || { echo "Trail: VAULT_DIR not found: $VAULT_DIR"; exit 1; }
 PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
-# VAULT_DIR sanity check — sistem dizinlerinde / yazılamayan yerlerde başlatma
+# VAULT_DIR sanity check — refuse system-shallow paths
 case "$VAULT_DIR" in
-  "/" | "/Users" | "/Users/" | "/tmp" | "/var" | "/etc" | "/usr" | "/opt" | "/private" | "/Volumes")
-    echo "Trail: '$VAULT_DIR' bir Claude projesi gibi görünmüyor."
-    echo "  Bu sistem dizinine notlar/ oluşturulamaz."
-    echo "  Gerçek bir proje klasöründen çalıştır:  cd ~/projects/myrepo && /trail"
-    echo "  Veya başlattıktan sonra sol üstten farklı bir proje seç."
+  "/" | "/Users" | "/Users/" | "/tmp" | "/var" | "/etc" | "/usr" | "/opt" | "/private" | "/Volumes" | "/home" | "/root")
+    echo "Trail: '$VAULT_DIR' does not look like a Claude project folder."
+    echo "  A notes/ folder cannot be created here."
+    echo "  Run from a real project folder, e.g.:  cd ~/projects/myrepo && /trail"
+    echo "  Or, once Trail is open, pick a project from the top-left dropdown."
     exit 1
     ;;
 esac
 
-# Yazma izni kontrolü (notlar/ oluşturulabilir mi?)
+# Writeability hint
 if [ ! -w "$VAULT_DIR" ]; then
-  echo "Trail UYARI: '$VAULT_DIR' yazılabilir değil — Notlar tab çalışmayabilir."
-  echo "  Başlattıktan sonra sol üstten gerçek bir Claude projesi seç."
+  echo "Trail WARN: '$VAULT_DIR' is not writable — the Notes tab may not work."
+  echo "  After it starts, pick a real Claude project from the top-left."
 fi
 
-# Browser açma yardımcısı
+# Browser opener helper
 open_browser() {
   local url="$1"
   if command -v open >/dev/null 2>&1; then
@@ -42,11 +42,11 @@ open_browser() {
   elif command -v start >/dev/null 2>&1; then
     start "$url"
   else
-    echo "Browser'ı manuel aç: $url"
+    echo "Open this URL manually: $url"
   fi
 }
 
-# Mevcut Trail server var mı kontrol et
+# Is a Trail server already up?
 existing_port=""
 for p in $(seq "$START_PORT" "$MAX_PORT"); do
   if curl -s "http://127.0.0.1:$p/api/health" 2>/dev/null | grep -q '"status":"ok"'; then
@@ -56,40 +56,38 @@ for p in $(seq "$START_PORT" "$MAX_PORT"); do
 done
 
 if [ -n "$existing_port" ]; then
-  # Mevcut server'a yeni proje URL parametresiyle aç
   url="http://127.0.0.1:$existing_port/?project=$VAULT_DIR"
-  echo "Trail zaten çalışıyor (port $existing_port)."
+  echo "Trail already running (port $existing_port)."
   echo "  vault: $VAULT_DIR"
   echo "  url:   $url"
   echo ""
-  echo "Mevcut server'a bağlanıldı. Browser'da yeni proje otomatik seçilecek."
+  echo "Connected to the existing server. Browser will switch to this project."
   open_browser "$url"
   exit 0
 fi
 
-# Bun kontrolü
+# Bun check
 BUN_BIN=""
 if command -v bun >/dev/null 2>&1; then
   BUN_BIN="bun"
 elif [ -x "$HOME/.bun/bin/bun" ]; then
   BUN_BIN="$HOME/.bun/bin/bun"
 else
-  echo "Trail: Bun bulunamadı."
-  echo "Kurulum: curl -fsSL https://bun.sh/install | bash"
-  echo "Kurduktan sonra terminal'i yenile ve tekrar dene."
+  echo "Trail: Bun not found."
+  echo "Install:  curl -fsSL https://bun.sh/install | bash"
+  echo "Then reopen your terminal and run /trail again."
   exit 1
 fi
 
-# Bun >= 1.0.0 kontrolü
 BUN_VER=$("$BUN_BIN" --version 2>/dev/null | head -1)
 BUN_MAJOR=$(echo "$BUN_VER" | cut -d. -f1)
 if [ -z "$BUN_MAJOR" ] || [ "$BUN_MAJOR" -lt 1 ]; then
-  echo "Trail: Bun >= 1.0.0 gerek (mevcut: $BUN_VER)."
-  echo "Güncelleme: $BUN_BIN upgrade"
+  echo "Trail: Bun >= 1.0.0 required (found: $BUN_VER)."
+  echo "Upgrade with:  $BUN_BIN upgrade"
   exit 1
 fi
 
-# Port'u bul (7777 doluysa 7778, 7779...)
+# Find a free port
 PORT=""
 for p in $(seq "$START_PORT" "$MAX_PORT"); do
   if ! lsof -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1; then
@@ -99,8 +97,8 @@ for p in $(seq "$START_PORT" "$MAX_PORT"); do
 done
 
 if [ -z "$PORT" ]; then
-  echo "Trail: $START_PORT - $MAX_PORT arası tüm portlar dolu."
-  echo "Mevcut bir Trail instance'ı çalışıyor olabilir, Ctrl+C ile durdur."
+  echo "Trail: ports $START_PORT - $MAX_PORT are all busy."
+  echo "An existing Trail instance may be running — stop it with Ctrl+C."
   exit 1
 fi
 
@@ -108,17 +106,17 @@ export VAULT_DIR
 export PORT
 export PLUGIN_DIR
 
-echo "Trail başlatılıyor..."
+echo "Trail starting..."
 echo "  vault: $VAULT_DIR"
 echo "  port:  $PORT"
 echo "  url:   http://127.0.0.1:$PORT"
 echo ""
 
-# Server arka planda, browser'ı aç, sonra foreground'a getir
+# Server in background, open browser, then bring back to foreground
 "$BUN_BIN" "$PLUGIN_DIR/server/index.ts" &
 SERVER_PID=$!
 
-# Server'ın açılmasını bekle (max 5s)
+# Wait until ready (max 5s)
 for i in {1..50}; do
   if curl -s "http://127.0.0.1:$PORT/api/health" >/dev/null 2>&1; then
     break
@@ -126,9 +124,8 @@ for i in {1..50}; do
   sleep 0.1
 done
 
-# Browser aç — mevcut vault'a proje query'siyle
 open_browser "http://127.0.0.1:$PORT/?project=$VAULT_DIR"
 
-# Ctrl+C ile server'ı temiz durdur
-trap "kill $SERVER_PID 2>/dev/null; echo ''; echo 'Trail durdu.'; exit 0" INT TERM
+# Clean shutdown
+trap "kill $SERVER_PID 2>/dev/null; echo ''; echo 'Trail stopped.'; exit 0" INT TERM
 wait $SERVER_PID

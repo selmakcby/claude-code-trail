@@ -18,7 +18,7 @@ async function resolveSafePath(vaultRoot: string, requestedPath: string): Promis
   // Başındaki '/' kaldır, vault'a göreceli yap
   const clean = requestedPath.replace(/^\/+/, "");
   if (clean.includes("\0")) {
-    throw new FileApiError("Geçersiz path", 400);
+    throw new FileApiError("Invalid path", 400);
   }
   const target = resolve(vaultRoot, clean);
 
@@ -32,17 +32,17 @@ async function resolveSafePath(vaultRoot: string, requestedPath: string): Promis
     try {
       const resolvedParent = await realpath(parent);
       if (!isInside(resolvedParent, vaultRoot)) {
-        throw new FileApiError("Vault dışı yol", 403);
+        throw new FileApiError("Path outside vault", 403);
       }
       return target;
     } catch (e) {
       if (e instanceof FileApiError) throw e;
-      throw new FileApiError("Dosya bulunamadı", 404);
+      throw new FileApiError("File not found", 404);
     }
   }
 
   if (!isInside(resolvedTarget, vaultRoot)) {
-    throw new FileApiError("Vault dışı yol", 403);
+    throw new FileApiError("Path outside vault", 403);
   }
   return resolvedTarget;
 }
@@ -55,10 +55,10 @@ function isInside(child: string, parent: string): boolean {
 export async function readFileSafe(vaultRoot: string, requestedPath: string): Promise<FileContent> {
   const absPath = await resolveSafePath(vaultRoot, requestedPath);
   const stats = await stat(absPath).catch(() => null);
-  if (!stats) throw new FileApiError("Dosya bulunamadı", 404);
-  if (stats.isDirectory()) throw new FileApiError("Bu bir klasör", 400);
+  if (!stats) throw new FileApiError("File not found", 404);
+  if (stats.isDirectory()) throw new FileApiError("This is a directory", 400);
   if (stats.size > MAX_FILE_SIZE) {
-    throw new FileApiError(`Dosya çok büyük (${stats.size} byte, max ${MAX_FILE_SIZE})`, 413);
+    throw new FileApiError(`File too large (${stats.size} bytes, max ${MAX_FILE_SIZE})`, 413);
   }
 
   const name = basename(absPath);
@@ -83,16 +83,16 @@ export async function writeFileSafe(
   const name = basename(absPath);
 
   if (isProtectedFile(name)) {
-    throw new FileApiError("Bu dosya readonly (secret-guard)", 403);
+    throw new FileApiError("File is readonly (secret-guard)", 403);
   }
 
   const ext = name.includes(".") ? "." + name.split(".").pop()!.toLowerCase() : "";
   if (!ALLOWED_WRITE_EXTENSIONS.has(ext)) {
-    throw new FileApiError(`Bu uzantıya yazma izni yok: ${ext || "(uzantısız)"}`, 403);
+    throw new FileApiError(`Cannot write to this extension: ${ext || "(no extension)"}`, 403);
   }
 
   if (content.length > MAX_FILE_SIZE) {
-    throw new FileApiError("İçerik çok büyük", 413);
+    throw new FileApiError("Content too large", 413);
   }
 
   await writeFile(absPath, content, "utf-8");

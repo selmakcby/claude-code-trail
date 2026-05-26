@@ -117,7 +117,7 @@ export async function writeMemoryFile(
 ): Promise<void> {
   const safe = sanitizeName(file);
   const path = join(projectMemoryDir(vaultDir), safe);
-  if (content.length > 100_000) throw new Error("memory dosyası çok büyük (>100KB)");
+  if (content.length > 100_000) throw new Error("memory file too large (>100KB)");
   await writeFile(path, content, "utf-8");
 }
 
@@ -154,7 +154,7 @@ export async function createMemoryFile(
     await mkdir(dir, { recursive: true });
   }
   const title = (params.title || "").trim();
-  if (!title) throw new Error("başlık zorunlu");
+  if (!title) throw new Error("title required");
   const slug = memorySlug(title) || `memory_${Date.now()}`;
   const type = params.type;
   const fileBase = `${type}_${slug}`;
@@ -180,7 +180,7 @@ export async function createMemoryFile(
 
 export async function deleteMemoryFile(vaultDir: string, file: string): Promise<void> {
   const safe = sanitizeName(file);
-  if (safe === "MEMORY.md") throw new Error("MEMORY.md silinemez");
+  if (safe === "MEMORY.md") throw new Error("MEMORY.md cannot be deleted");
   const path = join(projectMemoryDir(vaultDir), safe);
   await unlink(path);
 }
@@ -188,7 +188,7 @@ export async function deleteMemoryFile(vaultDir: string, file: string): Promise<
 function sanitizeName(file: string): string {
   // Sadece dosya adı, path olmasın
   const base = basename(file);
-  if (!/^[A-Za-z0-9._-]+$/.test(base)) throw new Error("geçersiz dosya adı");
-  if (!base.endsWith(".md")) throw new Error("sadece .md");
+  if (!/^[A-Za-z0-9._-]+$/.test(base)) throw new Error("invalid file name");
+  if (!base.endsWith(".md")) throw new Error("only .md files");
   return base;
 }
