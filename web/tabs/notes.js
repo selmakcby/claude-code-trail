@@ -1,4 +1,4 @@
-import { api, setStatus } from "/app.js";
+import { api, setStatus, t, fmtRelTime } from "/app.js";
 
 let LOCAL = null;
 let saveTimer = null;
@@ -10,37 +10,32 @@ function escapeHtml(s) {
   );
 }
 
-function fmtRel(mtimeMs) {
-  if (!mtimeMs) return "—";
-  const diff = Date.now() - mtimeMs;
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return "az önce";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}dk önce`;
-  const h = Math.floor(m / 60);
-  if (h < 48) return `${h}sa önce`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}g önce`;
-  const date = new Date(mtimeMs);
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
 function setSaveState(state) {
   const el = document.querySelector("#note-save-state");
   if (!el) return;
   el.className = `note-save-state ${state}`;
   el.textContent = {
-    saved: "✓ kaydedildi",
-    saving: "● kaydediliyor…",
-    dirty: "● değişiklik var",
+    saved: t("notes_save_saved"),
+    saving: t("notes_save_saving"),
+    dirty: t("notes_save_dirty"),
     idle: "",
   }[state] || "";
 }
 
 export async function renderNotesTab(container) {
-  setStatus("notlar yükleniyor…");
-  const data = await api("/api/notes");
+  setStatus(t("notes_loading"));
+  let data;
+  try {
+    data = await api("/api/notes");
+  } catch (e) {
+    container.innerHTML = `
+      <div class="error-panel">
+        <div class="error-title">${escapeHtml(t("notes_open_failed"))}</div>
+        <div class="error-detail">${escapeHtml(e.message)}</div>
+      </div>`;
+    setStatus(t("status_error", e.message));
+    return;
+  }
   LOCAL = {
     data,
     selectedFile: null,
@@ -48,18 +43,32 @@ export async function renderNotesTab(container) {
     searchTerm: "",
   };
 
+  // Notlar klasörü yazılamıyorsa (yanlış vault seçilmiş olabilir) — bilgilendirici empty state
+  if (data.writable === false) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-mark">⚠</div>
+        <div class="empty-title">${escapeHtml(t("notes_not_writable_title"))}</div>
+        <div class="empty-sub">${t("notes_not_writable_sub", { dir: escapeHtml(data.dir) })}</div>
+      </div>`;
+    setStatus(t("notes_not_writable_title"));
+    return;
+  }
+
+  const firstNote = data.items.length === 0;
+
   container.innerHTML = `
     <div class="notes-page">
       <div class="page-header">
-        <h1 class="page-title">Notlar</h1>
-        <p class="page-sub">Hızlı not alma alanı. Vault klasöründe <code>${escapeHtml(data.dir)}/</code> altına kaydedilir — Files sekmesinden de erişilebilir, geçmiş aramaya dahil olur. Yazdıkça otomatik kayıt.</p>
+        <h1 class="page-title">${escapeHtml(t("notes_title"))}</h1>
+        <p class="page-sub">${t("notes_page_sub", { dir: escapeHtml(data.dir) })}</p>
       </div>
 
       <div class="notes-layout">
         <aside class="notes-sidebar">
           <div class="notes-toolbar">
-            <button class="btn btn-primary notes-new-btn" id="note-new-btn">+ Yeni not</button>
-            <input class="notes-search" id="note-search" type="search" placeholder="ara… (başlık veya içerik)" />
+            <button class="btn btn-primary notes-new-btn" id="note-new-btn">${escapeHtml(t("notes_btn_new"))}</button>
+            <input class="notes-search" id="note-search" type="search" placeholder="${escapeHtml(t("notes_search"))}" />
           </div>
           <div class="notes-list" id="notes-list"></div>
         </aside>
@@ -67,12 +76,8 @@ export async function renderNotesTab(container) {
         <section class="notes-editor-area" id="notes-editor-area">
           <div class="placeholder">
             <div class="placeholder-mark">✎</div>
-            <div class="placeholder-text">${data.items.length > 0 ? "bir not seç" : "henüz not yok"}</div>
-            <div class="placeholder-sub">
-              ${data.items.length > 0
-                ? "Soldan bir nota tıkla veya üstten <b>+ Yeni not</b> ile başla."
-                : "Üstten <b>+ Yeni not</b> butonuna bas — ilk notun otomatik kaydedilir."}
-            </div>
+            <div class="placeholder-text">${escapeHtml(firstNote ? t("notes_empty_first") : t("notes_empty_select"))}</div>
+            <div class="placeholder-sub">${firstNote ? t("notes_empty_sub_first") : t("notes_empty_sub_select")}</div>
           </div>
         </section>
       </div>
@@ -86,7 +91,7 @@ export async function renderNotesTab(container) {
   });
 
   renderList();
-  setStatus(`${data.items.length} not`);
+  setStatus(t("notes_count", data.items.length));
 
   // Global "trail:new-note" event'i dinle (app.js'teki ⌘N tetikler)
   window.removeEventListener("trail:new-note", handleNewNoteEvent);
@@ -111,16 +116,17 @@ function renderList() {
   const list = document.querySelector("#notes-list");
   const items = filteredItems();
   if (items.length === 0) {
-    list.innerHTML = `<div class="notes-empty-list">${
-      LOCAL.searchTerm ? `"${escapeHtml(LOCAL.searchTerm)}" için eşleşme yok` : "henüz not yok — + Yeni not"
-    }</div>`;
+    const empty = LOCAL.searchTerm
+      ? t("notes_empty_list_search", { term: escapeHtml(LOCAL.searchTerm) })
+      : t("notes_empty_list");
+    list.innerHTML = `<div class="notes-empty-list">${empty}</div>`;
     return;
   }
   list.innerHTML = items.map((it) => `
     <div class="note-card ${LOCAL.selectedFile === it.file ? "active" : ""}" data-file="${escapeHtml(it.file)}">
       <div class="note-card-title">${escapeHtml(it.title)}</div>
-      <div class="note-card-preview">${escapeHtml(it.preview) || "(boş)"}</div>
-      <div class="note-card-meta">${fmtRel(it.mtimeMs)}</div>
+      <div class="note-card-preview">${escapeHtml(it.preview) || escapeHtml(t("notes_empty_preview"))}</div>
+      <div class="note-card-meta">${escapeHtml(fmtRelTime(it.mtimeMs, "long"))}</div>
     </div>
   `).join("");
   list.querySelectorAll(".note-card").forEach((card) => {
@@ -137,13 +143,13 @@ async function openNote(file) {
   );
 
   const area = document.querySelector("#notes-editor-area");
-  area.innerHTML = '<div class="loading">açılıyor…</div>';
+  area.innerHTML = `<div class="loading">${escapeHtml(t("notes_opening"))}</div>`;
   try {
     const data = await api(`/api/file?path=${encodeURIComponent(item.path)}`);
     LOCAL.currentContent = data.content;
     renderEditor(item, data.content);
   } catch (e) {
-    area.innerHTML = `<div class="error-panel"><div class="error-title">Not açılamadı</div><div class="error-detail">${escapeHtml(e.message)}</div></div>`;
+    area.innerHTML = `<div class="error-panel"><div class="error-title">${escapeHtml(t("notes_open_failed"))}</div><div class="error-detail">${escapeHtml(e.message)}</div></div>`;
   }
 }
 
@@ -153,14 +159,14 @@ function renderEditor(item, content) {
     <div class="notes-editor-head">
       <div class="notes-editor-meta">
         <span class="notes-editor-file">${escapeHtml(item.file)}</span>
-        <span class="notes-editor-time">son: ${fmtRel(item.mtimeMs)}</span>
+        <span class="notes-editor-time">${escapeHtml(t("notes_last"))} ${escapeHtml(fmtRelTime(item.mtimeMs, "long"))}</span>
       </div>
       <div class="notes-editor-actions">
         <span class="note-save-state" id="note-save-state"></span>
-        <button class="btn btn-ghost" id="note-delete-btn" title="Notu sil">sil</button>
+        <button class="btn btn-ghost" id="note-delete-btn" title="${escapeHtml(t("notes_delete_tooltip"))}">${escapeHtml(t("btn_delete"))}</button>
       </div>
     </div>
-    <textarea class="notes-editor-textarea" id="notes-editor-textarea" spellcheck="false" placeholder="# Başlık&#10;&#10;Buraya not al…"></textarea>
+    <textarea class="notes-editor-textarea" id="notes-editor-textarea" spellcheck="false" placeholder="${escapeHtml(t("notes_editor_placeholder"))}"></textarea>
   `;
   const ta = area.querySelector("#notes-editor-textarea");
   ta.value = content;
@@ -200,31 +206,31 @@ async function saveCurrentNote(item) {
     renderList();
   } catch (e) {
     setSaveState("dirty");
-    setStatus(`kaydetme hatası: ${e.message}`);
+    setStatus(t("notes_save_error", e.message));
   }
 }
 
 async function createNewNote() {
-  setStatus("yeni not oluşturuluyor…");
+  setStatus(t("notes_creating"));
   try {
     const note = await api("/api/notes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ title: t("notes_default_title") }),
     });
     LOCAL.data = await api("/api/notes");
     LOCAL.selectedFile = note.file;
     renderList();
     await openNote(note.file);
-    setStatus("yeni not açıldı");
+    setStatus(t("notes_created"));
   } catch (e) {
-    setStatus(`hata: ${e.message}`);
+    setStatus(t("status_error", e.message));
   }
 }
 
 async function deleteNote(item) {
-  if (!confirm(`"${item.title}" silinsin mi? Bu geri alınamaz.`)) return;
-  setStatus("siliniyor…");
+  if (!confirm(t("notes_delete_confirm", { title: item.title }))) return;
+  setStatus(t("notes_deleting"));
   try {
     await api(`/api/notes?file=${encodeURIComponent(item.file)}`, { method: "DELETE" });
     LOCAL.data = await api("/api/notes");
@@ -233,11 +239,11 @@ async function deleteNote(item) {
     document.querySelector("#notes-editor-area").innerHTML = `
       <div class="placeholder">
         <div class="placeholder-mark">✓</div>
-        <div class="placeholder-text">silindi</div>
-        <div class="placeholder-sub">Yeni bir not için <b>+ Yeni not</b>.</div>
+        <div class="placeholder-text">${escapeHtml(t("notes_deleted_short"))}</div>
+        <div class="placeholder-sub">${t("notes_deleted_sub")}</div>
       </div>`;
-    setStatus(`silindi: ${item.file}`);
+    setStatus(t("notes_deleted_status", item.file));
   } catch (e) {
-    setStatus(`hata: ${e.message}`);
+    setStatus(t("status_error", e.message));
   }
 }

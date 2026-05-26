@@ -15,6 +15,23 @@ VAULT_DIR="${VAULT_DIR:-${CLAUDE_PROJECT_DIR:-$PWD}}"
 VAULT_DIR="$(cd "$VAULT_DIR" 2>/dev/null && pwd)" || { echo "Trail: VAULT_DIR bulunamadı: $VAULT_DIR"; exit 1; }
 PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
+# VAULT_DIR sanity check — sistem dizinlerinde / yazılamayan yerlerde başlatma
+case "$VAULT_DIR" in
+  "/" | "/Users" | "/Users/" | "/tmp" | "/var" | "/etc" | "/usr" | "/opt" | "/private" | "/Volumes")
+    echo "Trail: '$VAULT_DIR' bir Claude projesi gibi görünmüyor."
+    echo "  Bu sistem dizinine notlar/ oluşturulamaz."
+    echo "  Gerçek bir proje klasöründen çalıştır:  cd ~/projects/myrepo && /trail"
+    echo "  Veya başlattıktan sonra sol üstten farklı bir proje seç."
+    exit 1
+    ;;
+esac
+
+# Yazma izni kontrolü (notlar/ oluşturulabilir mi?)
+if [ ! -w "$VAULT_DIR" ]; then
+  echo "Trail UYARI: '$VAULT_DIR' yazılabilir değil — Notlar tab çalışmayabilir."
+  echo "  Başlattıktan sonra sol üstten gerçek bir Claude projesi seç."
+fi
+
 # Browser açma yardımcısı
 open_browser() {
   local url="$1"

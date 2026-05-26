@@ -1,4 +1,4 @@
-import { api, setStatus } from "/app.js";
+import { api, setStatus, t, getLang } from "/app.js";
 import { renderMarkdown } from "/markdown.js";
 
 const TOOL_GLYPH = {
@@ -7,13 +7,27 @@ const TOOL_GLYPH = {
   WebFetch: "↗", WebSearch: "⌕", TodoWrite: "✓", Other: "·",
 };
 
-const TOOL_LABEL_TR = {
-  Read: "okuma", Edit: "düzenleme", Write: "yazma",
-  MultiEdit: "çoklu düzenleme", NotebookEdit: "notebook",
-  Bash: "komut", Grep: "metin arama", Glob: "dosya arama",
-  Agent: "alt ajan", WebFetch: "web indirme", WebSearch: "web arama",
-  TodoWrite: "görev planı", Other: "diğer",
+const TOOL_LABELS = {
+  en: {
+    Read: "read", Edit: "edit", Write: "write",
+    MultiEdit: "multi-edit", NotebookEdit: "notebook",
+    Bash: "command", Grep: "search text", Glob: "search files",
+    Agent: "subagent", WebFetch: "web fetch", WebSearch: "web search",
+    TodoWrite: "tasks", Other: "other",
+  },
+  tr: {
+    Read: "okuma", Edit: "düzenleme", Write: "yazma",
+    MultiEdit: "çoklu düzenleme", NotebookEdit: "notebook",
+    Bash: "komut", Grep: "metin arama", Glob: "dosya arama",
+    Agent: "alt ajan", WebFetch: "web indirme", WebSearch: "web arama",
+    TodoWrite: "görev planı", Other: "diğer",
+  },
 };
+
+function toolLabel(tool) {
+  const lang = getLang();
+  return (TOOL_LABELS[lang] || TOOL_LABELS.en)[tool] || tool.toLowerCase();
+}
 
 let LOCAL = null;
 
@@ -47,13 +61,15 @@ function fmtDuration(start, end) {
   const s = Math.floor(ms / 1000);
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}dk`;
+  if (m < 60) {
+    return getLang() === "tr" ? `${m}dk` : `${m}m`;
+  }
   const h = Math.floor(m / 60);
-  return `${h}sa${m % 60}dk`;
+  return getLang() === "tr" ? `${h}sa${m % 60}dk` : `${h}h${m % 60}m`;
 }
 
 export async function renderSessionsTab(container) {
-  setStatus("session listesi yükleniyor…");
+  setStatus(t("history_loading"));
   const sessions = await api("/api/sessions");
   LOCAL = { sessions, selectedId: null, view: "patika", detailCache: new Map(), convCache: new Map() };
 
@@ -61,33 +77,29 @@ export async function renderSessionsTab(container) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-mark">◐</div>
-        <div class="empty-title">Henüz Claude session'ı yok</div>
-        <div class="empty-sub">
-          Bu projede Claude Code ile yapılmış hiç konuşma kaydı bulunmuyor.<br/>
-          Terminal'de bu klasörden <code>claude</code> komutuyla başla, bir mesaj at,
-          sonra burayı yenile — geçmiş session'ların listesi ve her birinin patikası burada.
-        </div>
+        <div class="empty-title">${escapeHtml(t("history_empty_title"))}</div>
+        <div class="empty-sub">${t("history_empty_sub")}</div>
       </div>`;
-    setStatus("session yok");
+    setStatus(t("history_empty_status"));
     return;
   }
 
   container.innerHTML = `
     <div class="sessions-page">
       <div class="page-header">
-        <h1 class="page-title">Geçmiş</h1>
-        <p class="page-sub">Tüm Claude Code session'larının arşivi. Tıkla, içeride hangi araçları çağırdığını <b>Patika</b>'da, ne konuştuğunu <b>Konuşma</b>'da gör.</p>
+        <h1 class="page-title">${escapeHtml(t("history_title"))}</h1>
+        <p class="page-sub">${t("history_page_sub")}</p>
       </div>
       <header class="sessions-header">
-        <p class="sessions-sub">Toplam <b>${sessions.length}</b> session (son 30) · tıkla, detayları aç</p>
+        <p class="sessions-sub">${t("history_total", sessions.length)}</p>
       </header>
       <div class="sessions-layout">
         <div class="sessions-list" id="sessions-list"></div>
         <div class="sessions-detail" id="sessions-detail">
           <div class="placeholder">
             <div class="placeholder-mark">◐</div>
-            <div class="placeholder-text">session seç</div>
-            <div class="placeholder-sub">Soldan bir session'a tıkla — tool patikası veya konuşma akışı burada açılır.</div>
+            <div class="placeholder-text">${escapeHtml(t("history_select_placeholder"))}</div>
+            <div class="placeholder-sub">${t("history_select_sub")}</div>
           </div>
         </div>
       </div>
@@ -95,7 +107,7 @@ export async function renderSessionsTab(container) {
   `;
 
   renderList();
-  setStatus(`${sessions.length} session`);
+  setStatus(t("history_count", sessions.length));
 }
 
 function renderList() {
@@ -133,7 +145,7 @@ async function renderDetail() {
   const detail = document.querySelector("#sessions-detail");
   if (!id) return;
 
-  detail.innerHTML = '<div class="loading">session detayı yükleniyor…</div>';
+  detail.innerHTML = `<div class="loading">${escapeHtml(t("history_detail_loading"))}</div>`;
 
   let data;
   try {
@@ -143,7 +155,7 @@ async function renderDetail() {
       LOCAL.detailCache.set(id, data);
     }
   } catch (e) {
-    detail.innerHTML = `<div class="error-panel"><div class="error-title">Yüklenemedi</div><div class="error-detail">${escapeHtml(e.message)}</div></div>`;
+    detail.innerHTML = `<div class="error-panel"><div class="error-title">${escapeHtml(t("err_load_fail"))}</div><div class="error-detail">${escapeHtml(e.message)}</div></div>`;
     return;
   }
 
@@ -156,24 +168,24 @@ async function renderDetail() {
     </div>
     ${data.firstUserPrompt ? `
       <div class="session-firstprompt">
-        <div class="session-firstprompt-label">ilk prompt</div>
+        <div class="session-firstprompt-label">${escapeHtml(t("history_first_prompt"))}</div>
         <div class="session-firstprompt-text">${escapeHtml(data.firstUserPrompt)}</div>
       </div>` : ""}
     <div class="session-stats-row">
-      <div class="stat-block"><div class="stat-label">tool çağrısı</div><div class="stat-value">${data.toolUseCount}</div></div>
-      <div class="stat-block"><div class="stat-label">dosya</div><div class="stat-value">${data.fileHeatmap.length}</div></div>
-      <div class="stat-block"><div class="stat-label">süre</div><div class="stat-value-sm">${fmtDuration(data.startedAt, data.endedAt)}</div></div>
-      <div class="stat-block"><div class="stat-label">model</div><div class="stat-value-sm">${data.models.map((m) => m.replace("claude-", "")).join(", ") || "—"}</div></div>
+      <div class="stat-block"><div class="stat-label">${escapeHtml(t("history_stat_tools"))}</div><div class="stat-value">${data.toolUseCount}</div></div>
+      <div class="stat-block"><div class="stat-label">${escapeHtml(t("history_stat_files"))}</div><div class="stat-value">${data.fileHeatmap.length}</div></div>
+      <div class="stat-block"><div class="stat-label">${escapeHtml(t("history_stat_duration"))}</div><div class="stat-value-sm">${fmtDuration(data.startedAt, data.endedAt)}</div></div>
+      <div class="stat-block"><div class="stat-label">${escapeHtml(t("history_stat_model"))}</div><div class="stat-value-sm">${data.models.map((m) => m.replace("claude-", "")).join(", ") || "—"}</div></div>
     </div>
     <div class="session-breakdown">
-      ${breakdownEntries.map(([t, c]) => `
-        <span class="tool-pill" title="${TOOL_LABEL_TR[t] ?? "diğer"}">${TOOL_GLYPH[t] ?? "·"} ${escapeHtml(t)} ${c}</span>
+      ${breakdownEntries.map(([tk, c]) => `
+        <span class="tool-pill" title="${escapeHtml(toolLabel(tk))}">${TOOL_GLYPH[tk] ?? "·"} ${escapeHtml(tk)} ${c}</span>
       `).join("")}
     </div>
 
     <div class="session-view-switch" role="tablist">
-      <button class="view-tab ${LOCAL.view === "patika" ? "active" : ""}" data-view="patika" role="tab">Patika</button>
-      <button class="view-tab ${LOCAL.view === "konusma" ? "active" : ""}" data-view="konusma" role="tab">Konuşma</button>
+      <button class="view-tab ${LOCAL.view === "patika" ? "active" : ""}" data-view="patika" role="tab">${escapeHtml(t("history_view_path"))}</button>
+      <button class="view-tab ${LOCAL.view === "konusma" ? "active" : ""}" data-view="konusma" role="tab">${escapeHtml(t("history_view_conversation"))}</button>
     </div>
     <div class="session-view-body" id="session-view-body"></div>
   `;
@@ -201,7 +213,7 @@ async function renderViewBody(detail) {
         ${detail.events.map((e) => `
           <div class="trail-event" data-tool="${escapeHtml(e.tool)}">
             <span class="trail-event-glyph">${TOOL_GLYPH[e.tool] ?? "·"}</span>
-            <span class="trail-event-tool" title="${escapeHtml(TOOL_LABEL_TR[e.tool] ?? "diğer")}">${escapeHtml(e.tool)}</span>
+            <span class="trail-event-tool" title="${escapeHtml(toolLabel(e.tool))}">${escapeHtml(e.tool)}</span>
             <span class="trail-event-summary">${escapeHtml(e.summary || "—")}</span>
             <span class="trail-event-time">${fmtTime(e.timestamp)}</span>
           </div>
@@ -212,7 +224,7 @@ async function renderViewBody(detail) {
   }
 
   // Konuşma view
-  body.innerHTML = '<div class="loading">konuşma yükleniyor…</div>';
+  body.innerHTML = `<div class="loading">${escapeHtml(t("history_conv_loading"))}</div>`;
   const id = detail.id;
   let conv;
   try {
@@ -222,12 +234,12 @@ async function renderViewBody(detail) {
       LOCAL.convCache.set(id, conv);
     }
   } catch (e) {
-    body.innerHTML = `<div class="error-panel"><div class="error-title">Konuşma yüklenemedi</div><div class="error-detail">${escapeHtml(e.message)}</div></div>`;
+    body.innerHTML = `<div class="error-panel"><div class="error-title">${escapeHtml(t("history_conv_load_failed"))}</div><div class="error-detail">${escapeHtml(e.message)}</div></div>`;
     return;
   }
 
   if (conv.messages.length === 0) {
-    body.innerHTML = '<div class="empty-state-small">Bu session\'da gösterilebilir mesaj yok.</div>';
+    body.innerHTML = `<div class="empty-state-small">${escapeHtml(t("history_conv_empty"))}</div>`;
     return;
   }
 
@@ -235,8 +247,8 @@ async function renderViewBody(detail) {
   const hiddenCount = conv.messages.length - visibleMessages.length;
 
   body.innerHTML = `
-    ${conv.truncated ? `<div class="conv-notice">Bu session çok uzun — son ${conv.messages.length} mesaj gösteriliyor.</div>` : ""}
-    ${hiddenCount > 0 ? `<div class="conv-notice subtle">${hiddenCount} sistem mesajı gizlendi (slash komut, attachment vs.). <button class="link-btn" id="show-all-msgs">hepsini göster</button></div>` : ""}
+    ${conv.truncated ? `<div class="conv-notice">${t("history_conv_truncated", conv.messages.length)}</div>` : ""}
+    ${hiddenCount > 0 ? `<div class="conv-notice subtle">${t("history_conv_hidden", hiddenCount)} <button class="link-btn" id="show-all-msgs">${escapeHtml(t("history_conv_show_all"))}</button></div>` : ""}
     <div class="conv-stream" id="conv-stream">
       ${visibleMessages.map((m) => renderMessage(m)).join("")}
     </div>
@@ -253,14 +265,14 @@ async function renderViewBody(detail) {
 
 function renderMessage(m) {
   const ts = m.timestamp ? `<span class="msg-time">${fmtTime(m.timestamp)}</span>` : "";
-  const roleLabel = m.role === "user" ? "Sen" : "Claude";
+  const roleLabel = m.role === "user" ? t("msg_role_user") : t("msg_role_assistant");
   const textHtml = m.text ? renderMarkdown(m.text) : "";
   const toolsHtml = m.toolCalls.length > 0 ? `
     <div class="msg-tools">
-      ${m.toolCalls.map((t) => `
-        <span class="msg-tool" title="${escapeHtml(TOOL_LABEL_TR[t.tool] ?? "diğer")}">
-          ${TOOL_GLYPH[t.tool] ?? "·"} ${escapeHtml(t.tool)}
-          <span class="msg-tool-sum">${escapeHtml(t.summary || "")}</span>
+      ${m.toolCalls.map((tc) => `
+        <span class="msg-tool" title="${escapeHtml(toolLabel(tc.tool))}">
+          ${TOOL_GLYPH[tc.tool] ?? "·"} ${escapeHtml(tc.tool)}
+          <span class="msg-tool-sum">${escapeHtml(tc.summary || "")}</span>
         </span>
       `).join("")}
     </div>
@@ -268,7 +280,7 @@ function renderMessage(m) {
   return `
     <div class="msg msg-${m.role} ${m.isMeta ? "msg-meta" : ""}">
       <div class="msg-head">
-        <span class="msg-role">${roleLabel}</span>
+        <span class="msg-role">${escapeHtml(roleLabel)}</span>
         ${ts}
       </div>
       ${textHtml ? `<div class="msg-body markdown-render">${textHtml}</div>` : ""}

@@ -5,9 +5,9 @@ import { renderMemoryTab } from "/tabs/memory.js";
 import { renderAgentsTab } from "/tabs/agents.js";
 import { renderSessionsTab } from "/tabs/sessions.js";
 import { renderGuideTab } from "/tabs/guide.js";
-import { applyStaticTranslations, getLang, setLang, t } from "/i18n.js";
+import { applyStaticTranslations, getLang, setLang, t, fmtRelTime } from "/i18n.js";
 
-export { t, getLang } from "/i18n.js";
+export { t, getLang, fmtRelTime } from "/i18n.js";
 
 export const STATE = {
   health: null,
@@ -39,23 +39,21 @@ export function setStatus(msg) {
   $("#status-msg").textContent = msg;
 }
 
-const HUMAN_ERRORS = {
-  "Vault dışı yol": "Bu dosya proje klasörünün dışında — açılamaz.",
-  "Bu dosya readonly (secret-guard)": "Bu dosya hassas (env, key, credentials) — düzenlenemez.",
-  "Dosya bulunamadı": "Dosya bulunamadı (silinmiş veya taşınmış olabilir).",
-  "Bu bir klasör": "Klasör seçildi — içindeki bir dosyaya tıkla.",
-  "Bilinmeyen endpoint": "Bilinmeyen istek.",
-  "session bulunamadı": "Bu session artık yok.",
-  "MEMORY.md silinemez": "MEMORY.md indeks dosyası — silinemez.",
-  "geçersiz dosya adı": "Geçersiz dosya adı.",
+const HUMAN_ERROR_KEYS = {
+  "Vault dışı yol": "err_human_outside_vault",
+  "Bu dosya readonly (secret-guard)": "err_human_readonly_secret",
+  "Dosya bulunamadı": "err_human_not_found",
+  "Bu bir klasör": "err_human_is_dir",
+  "Bilinmeyen endpoint": "err_human_unknown_endpoint",
+  "session bulunamadı": "err_human_session_missing",
+  "MEMORY.md silinemez": "err_human_memory_index_protected",
+  "geçersiz dosya adı": "err_human_invalid_filename",
 };
 
 function humanizeError(msg) {
-  if (HUMAN_ERRORS[msg]) return HUMAN_ERRORS[msg];
-  if (/^Bu uzantıya yazma izni yok/.test(msg)) {
-    return "Bu uzantıya yazma izni yok — sadece markdown (.md, .mdx, .markdown, .txt) dosyaları düzenlenebilir.";
-  }
-  if (/çok büyük/.test(msg)) return "Dosya çok büyük (>5MB) — güvenlik gereği gösterilmiyor.";
+  if (HUMAN_ERROR_KEYS[msg]) return t(HUMAN_ERROR_KEYS[msg]);
+  if (/^Bu uzantıya yazma izni yok/.test(msg)) return t("err_human_ext_not_allowed");
+  if (/çok büyük/.test(msg)) return t("err_human_too_big");
   return msg;
 }
 
@@ -74,16 +72,16 @@ export async function api(path, opts = {}) {
     res = await fetch(url, opts);
   } catch (e) {
     setServerHealthy(false);
-    throw new Error(`Sunucuya ulaşılamıyor — terminal'de hâlâ çalışıyor mu? (${e.message})`);
+    throw new Error(t("server_unreachable", e.message));
   }
   setServerHealthy(true);
   let json;
   try {
     json = await res.json();
   } catch {
-    throw new Error(`Beklenmedik yanıt (${res.status})`);
+    throw new Error(t("server_unexpected_response", res.status));
   }
-  if (!json.success) throw new Error(humanizeError(json.error || "Sunucu hatası"));
+  if (!json.success) throw new Error(humanizeError(json.error || t("server_error")));
   return json.data;
 }
 
@@ -91,8 +89,8 @@ function setServerHealthy(healthy) {
   if (STATE.serverHealthy === healthy) return;
   STATE.serverHealthy = healthy;
   document.body.classList.toggle("server-down", !healthy);
-  if (!healthy) setStatus("⚠ sunucu yok — yeniden bağlanılıyor…");
-  else setStatus("bağlandı");
+  if (!healthy) setStatus(t("status_server_down"));
+  else setStatus(t("status_connected"));
 }
 
 function setTheme(theme) {
@@ -130,7 +128,7 @@ function setAutoRefresh(on) {
   localStorage.setItem("trail-autorefresh", on ? "on" : "off");
   const btn = $("#refresh-toggle");
   btn.classList.toggle("on", on);
-  btn.title = on ? `Otomatik yenileme açık (${REFRESH_MS / 1000}sn'de bir)` : "Otomatik yenileme kapalı";
+  btn.title = on ? t("auto_refresh_on", REFRESH_MS / 1000) : t("auto_refresh_off");
   if (on) startRefreshTimer(); else stopRefreshTimer();
 }
 
@@ -138,18 +136,18 @@ async function renderCurrentTab(silent = false) {
   const tab = STATE.activeTab;
   if (!TABS[tab]) return;
   const container = $("#tab-content");
-  if (!silent) container.innerHTML = '<div class="loading">yükleniyor…</div>';
+  if (!silent) container.innerHTML = `<div class="loading">${escapeHtml(t("status_loading"))}</div>`;
   try {
     await TABS[tab](container);
   } catch (e) {
     container.innerHTML = `<div class="error-panel">
-      <div class="error-title">${tab} sekmesi yüklenemedi</div>
+      <div class="error-title">${escapeHtml(t("err_tab_fail", { tab }))}</div>
       <div class="error-detail">${escapeHtml(e.message)}</div>
-      <button class="btn btn-primary" id="retry-btn" style="margin-top:14px;">tekrar dene</button>
+      <button class="btn btn-primary" id="retry-btn" style="margin-top:14px;">${escapeHtml(t("btn_retry"))}</button>
     </div>`;
     const retry = container.querySelector("#retry-btn");
     if (retry) retry.addEventListener("click", () => showTab(tab));
-    if (!silent) setStatus(`hata: ${e.message}`);
+    if (!silent) setStatus(t("status_error", e.message));
   }
 }
 
@@ -292,7 +290,7 @@ function renderProjectSwitcher() {
     const cls = ["project-opt"];
     if (active) cls.push("active");
     if (!p.vaultExists) cls.push("missing");
-    const subtitle = p.vaultExists ? shortPath(p.vaultDir) : `${shortPath(p.vaultDir)} (klasör yok)`;
+    const subtitle = p.vaultExists ? shortPath(p.vaultDir) : `${shortPath(p.vaultDir)} ${t("project_missing_dir")}`;
     return `
       <button class="${cls.join(" ")}" data-vault="${escapeHtml(p.vaultDir)}" ${!p.vaultExists ? "disabled" : ""}>
         <div class="project-opt-main">
@@ -308,7 +306,7 @@ function renderProjectSwitcher() {
   }).join("");
 
   if (filtered.length === 0) {
-    list.innerHTML = '<div class="project-empty">eşleşen proje yok</div>';
+    list.innerHTML = `<div class="project-empty">${escapeHtml(t("project_no_match"))}</div>`;
   }
 
   list.querySelectorAll(".project-opt[data-vault]").forEach((btn) => {
@@ -320,18 +318,7 @@ function renderProjectSwitcher() {
 }
 
 function formatRelTime(ms) {
-  if (!ms) return "—";
-  const diff = Date.now() - ms;
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return "şimdi";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}dk`;
-  const h = Math.floor(m / 60);
-  if (h < 48) return `${h}sa`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}g`;
-  const date = new Date(ms);
-  return `${date.getMonth() + 1}/${date.getDate()}`;
+  return fmtRelTime(ms, "short");
 }
 
 async function switchProject(vaultDir) {
@@ -343,7 +330,7 @@ async function switchProject(vaultDir) {
   persistActiveProject();
   closeProjectMenu();
   renderProjectSwitcher();
-  setStatus(`proje değişti: ${vaultDir}`);
+  setStatus(t("project_changed", vaultDir));
   // Mevcut sekmeyi yeniden yükle (cache reset)
   try {
     STATE.health = await api("/api/health");
@@ -442,9 +429,9 @@ async function init() {
   try {
     STATE.health = await api("/api/health");
     $("#vault-path").textContent = STATE.health.vault;
-    setStatus(`bağlı`);
+    setStatus(t("status_connected_short"));
   } catch (e) {
-    setStatus(`sunucu yok: ${e.message}`);
+    setStatus(t("status_server_missing", e.message));
   }
   showTab(STATE.activeTab);
 }

@@ -173,9 +173,112 @@ const TRANSLATIONS = {
     guide_btn_read_done: "✓ read",
     guide_lesson_loading: "loading lesson…",
 
-    // Common errors
+    // Notes — extra
+    notes_loading: "loading notes…",
+    notes_count: (n) => `${n} notes`,
+    notes_creating: "creating new note…",
+    notes_created: "new note opened",
+    notes_opening: "opening…",
+    notes_deleting: "deleting…",
+    notes_deleted_short: "deleted",
+    notes_deleted_status: (f) => `deleted: ${f}`,
+    notes_deleted_sub: "For a new one tap <b>+ New note</b>.",
+    notes_open_failed: "Couldn't open note",
+    notes_save_error: (msg) => `save error: ${msg}`,
+    notes_delete_tooltip: "Delete note",
+    notes_delete_confirm: 'Delete "{title}"? This cannot be undone.',
+    notes_empty_preview: "(empty)",
+    notes_default_title: "New note",
+    notes_not_writable_title: "Can't create notes here",
+    notes_not_writable_sub: "Notes get saved to <code>{dir}</code> inside the current project — but that folder can't be written. This often means the wrong project is selected. Pick a real Claude project from the top-left dropdown.",
+
+    // Agents — extra
+    agents_loading: "loading agents…",
+    agents_empty_status: "no agents",
+    agents_count: (n) => `${n} agents`,
+    agents_summary: "<b>{a}</b> agents · <b>{p}</b> project · <b>{g}</b> global · <b>{u}</b> used · <b>{n}</b> never called",
+    agents_filter_all_count: (n) => `all (${n})`,
+    agents_filter_project_count: (n) => `project (${n})`,
+    agents_filter_global_count: (n) => `global (${n})`,
+    agents_filter_used_count: (n) => `used (${n})`,
+    agents_filter_unused_count: (n) => `unused (${n})`,
+    agents_no_match: "no matching agents",
+    agents_total_tokens: "total tokens",
+    agents_total_tokens_sub: "across all calls",
+    agents_activity_title: "activity — calls in past sessions",
+    agents_activity_note: "The tasks this agent was given, when, and how much it (roughly) cost.",
+    agents_activity_warn:
+      "Note: Claude Code doesn't log <i>which files</i> the subagent touched internally — only its input prompt and final response are visible.",
+    agents_activity_loading: "loading activity…",
+    agents_activity_empty: "This agent hasn't been called yet in any recorded session.",
+    agents_activity_no_desc: "(no description)",
+    agents_activity_task: "task prompt",
+    agents_activity_result: "result",
+    agents_activity_truncated: "[…truncated]",
+    agents_activity_session: "session",
+
+    // Sessions / History — extra
+    history_loading: "loading session list…",
+    history_empty_status: "no sessions",
+    history_count: (n) => `${n} sessions`,
+    history_total: (n) => `Total <b>${n}</b> sessions (last 30) · click to see details`,
+    history_select_placeholder: "pick a session",
+    history_select_sub: "Click a session on the left — the tool path or full conversation appears here.",
+    history_detail_loading: "loading session detail…",
+    history_conv_loading: "loading conversation…",
+    history_conv_load_failed: "Couldn't load conversation",
+    history_conv_empty: "No displayable messages in this session.",
+    history_conv_truncated: (n) => `This session is long — showing the last ${n} messages.`,
+    history_conv_hidden: (n) => `${n} system messages hidden (slash commands, attachments…).`,
+    history_conv_show_all: "show all",
+    msg_role_user: "You",
+    msg_role_assistant: "Claude",
+
+    // Guide — extra
+    guide_loading: "loading guide…",
+    guide_index_failed: "couldn't load guide index",
+    guide_count_status: (n) => `${n} lessons`,
+    guide_lesson_not_found: (slug) => `lesson not found: ${slug}`,
+    guide_load_failed: "Couldn't load lesson",
+
+    // App / errors
+    server_unreachable: (msg) => `Can't reach the server — still running in terminal? (${msg})`,
+    server_unexpected_response: (status) => `Unexpected response (${status})`,
+    server_error: "Server error",
+    auto_refresh_on: (sec) => `Auto-refresh on (every ${sec}s)`,
+    auto_refresh_off: "Auto-refresh off",
+    status_connected_short: "connected",
+    status_error: (msg) => `error: ${msg}`,
+    status_server_missing: (msg) => `no server: ${msg}`,
+    project_changed: (dir) => `switched project: ${dir}`,
+    project_no_match: "no matching projects",
+    project_missing_dir: "(folder missing)",
+
+    // Common errors (existing keys preserved)
     err_load_fail: "failed to load",
     err_tab_fail: "{tab} tab failed to load",
+    err_human_outside_vault: "This file is outside the project folder — can't open.",
+    err_human_readonly_secret: "This file is sensitive (env, key, credentials) — can't edit.",
+    err_human_not_found: "File not found (may have been deleted or moved).",
+    err_human_is_dir: "A folder is selected — click a file inside.",
+    err_human_unknown_endpoint: "Unknown request.",
+    err_human_session_missing: "This session no longer exists.",
+    err_human_memory_index_protected: "MEMORY.md is the index file — can't be deleted.",
+    err_human_invalid_filename: "Invalid file name.",
+    err_human_ext_not_allowed: "This extension can't be written — only markdown (.md, .mdx, .markdown, .txt) is editable.",
+    err_human_too_big: "File too big (>5MB) — hidden for safety.",
+
+    // Time-ago (compact and long forms)
+    time_just_now: "just now",
+    time_min_short: (n) => `${n}m`,
+    time_hour_short: (n) => `${n}h`,
+    time_day_short: (n) => `${n}d`,
+    time_sec_long: (n) => `${n}s ago`,
+    time_min_long: (n) => `${n}m ago`,
+    time_hour_long: (n) => `${n}h ago`,
+    time_day_long: (n) => `${n}d ago`,
+    time_never: "never",
+    time_em: "—",
   },
 
   tr: {
@@ -333,8 +436,105 @@ const TRANSLATIONS = {
     guide_btn_read_done: "✓ okundu",
     guide_lesson_loading: "ders açılıyor…",
 
+    notes_loading: "notlar yükleniyor…",
+    notes_count: (n) => `${n} not`,
+    notes_creating: "yeni not oluşturuluyor…",
+    notes_created: "yeni not açıldı",
+    notes_opening: "açılıyor…",
+    notes_deleting: "siliniyor…",
+    notes_deleted_short: "silindi",
+    notes_deleted_status: (f) => `silindi: ${f}`,
+    notes_deleted_sub: "Yeni bir not için <b>+ Yeni not</b>.",
+    notes_open_failed: "Not açılamadı",
+    notes_save_error: (msg) => `kaydetme hatası: ${msg}`,
+    notes_delete_tooltip: "Notu sil",
+    notes_delete_confirm: '"{title}" silinsin mi? Bu geri alınamaz.',
+    notes_empty_preview: "(boş)",
+    notes_default_title: "Yeni not",
+    notes_not_writable_title: "Burada not oluşturulamıyor",
+    notes_not_writable_sub: "Notlar mevcut projenin içindeki <code>{dir}</code> klasörüne kaydedilir — ama bu klasör yazılamıyor. Genellikle yanlış proje seçilidir. Sol üstteki listeden gerçek bir Claude projesi seç.",
+
+    agents_loading: "ajanlar yükleniyor…",
+    agents_empty_status: "ajan yok",
+    agents_count: (n) => `${n} ajan`,
+    agents_summary: "<b>{a}</b> ajan · <b>{p}</b> proje · <b>{g}</b> global · <b>{u}</b> kullanılmış · <b>{n}</b> hiç tetiklenmemiş",
+    agents_filter_all_count: (n) => `tümü (${n})`,
+    agents_filter_project_count: (n) => `proje (${n})`,
+    agents_filter_global_count: (n) => `global (${n})`,
+    agents_filter_used_count: (n) => `kullanılan (${n})`,
+    agents_filter_unused_count: (n) => `kullanılmayan (${n})`,
+    agents_no_match: "eşleşen ajan yok",
+    agents_total_tokens: "toplam token",
+    agents_total_tokens_sub: "tüm çağrılar",
+    agents_activity_title: "aktivite — geçmiş session'lardaki çağrılar",
+    agents_activity_note: "Bu ajana verilen görevler, ne zaman, kabaca ne kadar maliyetle.",
+    agents_activity_warn:
+      "Not: Claude Code, alt ajanın içeride <i>hangi dosyalara</i> dokunduğunu loglamaz — sadece prompt + nihai cevap görünür.",
+    agents_activity_loading: "aktivite yükleniyor…",
+    agents_activity_empty: "Bu ajan kayıtlı hiçbir session'da çağrılmamış.",
+    agents_activity_no_desc: "(açıklama yok)",
+    agents_activity_task: "görev prompt'u",
+    agents_activity_result: "sonuç",
+    agents_activity_truncated: "[…kesildi]",
+    agents_activity_session: "session",
+
+    history_loading: "session listesi yükleniyor…",
+    history_empty_status: "session yok",
+    history_count: (n) => `${n} session`,
+    history_total: (n) => `Toplam <b>${n}</b> session (son 30) · tıkla, detayları aç`,
+    history_select_placeholder: "session seç",
+    history_select_sub: "Soldan bir session'a tıkla — tool patikası veya konuşma akışı burada açılır.",
+    history_detail_loading: "session detayı yükleniyor…",
+    history_conv_loading: "konuşma yükleniyor…",
+    history_conv_load_failed: "Konuşma yüklenemedi",
+    history_conv_empty: "Bu session'da gösterilebilir mesaj yok.",
+    history_conv_truncated: (n) => `Bu session çok uzun — son ${n} mesaj gösteriliyor.`,
+    history_conv_hidden: (n) => `${n} sistem mesajı gizlendi (slash komut, attachment vs.).`,
+    history_conv_show_all: "hepsini göster",
+    msg_role_user: "Sen",
+    msg_role_assistant: "Claude",
+
+    guide_loading: "kılavuz yükleniyor…",
+    guide_index_failed: "kılavuz indeksi yüklenemedi",
+    guide_count_status: (n) => `${n} ders`,
+    guide_lesson_not_found: (slug) => `ders bulunamadı: ${slug}`,
+    guide_load_failed: "Ders yüklenemedi",
+
+    server_unreachable: (msg) => `Sunucuya ulaşılamıyor — terminal'de hâlâ çalışıyor mu? (${msg})`,
+    server_unexpected_response: (status) => `Beklenmedik yanıt (${status})`,
+    server_error: "Sunucu hatası",
+    auto_refresh_on: (sec) => `Otomatik yenileme açık (${sec}sn'de bir)`,
+    auto_refresh_off: "Otomatik yenileme kapalı",
+    status_connected_short: "bağlı",
+    status_error: (msg) => `hata: ${msg}`,
+    status_server_missing: (msg) => `sunucu yok: ${msg}`,
+    project_changed: (dir) => `proje değişti: ${dir}`,
+    project_no_match: "eşleşen proje yok",
+    project_missing_dir: "(klasör yok)",
+
     err_load_fail: "yüklenemedi",
     err_tab_fail: "{tab} sekmesi yüklenemedi",
+    err_human_outside_vault: "Bu dosya proje klasörünün dışında — açılamaz.",
+    err_human_readonly_secret: "Bu dosya hassas (env, key, credentials) — düzenlenemez.",
+    err_human_not_found: "Dosya bulunamadı (silinmiş veya taşınmış olabilir).",
+    err_human_is_dir: "Klasör seçildi — içindeki bir dosyaya tıkla.",
+    err_human_unknown_endpoint: "Bilinmeyen istek.",
+    err_human_session_missing: "Bu session artık yok.",
+    err_human_memory_index_protected: "MEMORY.md indeks dosyası — silinemez.",
+    err_human_invalid_filename: "Geçersiz dosya adı.",
+    err_human_ext_not_allowed: "Bu uzantıya yazma izni yok — sadece markdown (.md, .mdx, .markdown, .txt) dosyaları düzenlenebilir.",
+    err_human_too_big: "Dosya çok büyük (>5MB) — güvenlik gereği gösterilmiyor.",
+
+    time_just_now: "az önce",
+    time_min_short: (n) => `${n}dk`,
+    time_hour_short: (n) => `${n}sa`,
+    time_day_short: (n) => `${n}g`,
+    time_sec_long: (n) => `${n}s önce`,
+    time_min_long: (n) => `${n}dk önce`,
+    time_hour_long: (n) => `${n}sa önce`,
+    time_day_long: (n) => `${n}g önce`,
+    time_never: "hiç",
+    time_em: "—",
   },
 };
 
@@ -390,3 +590,34 @@ export const AVAILABLE_LANGS = [
   { code: "en", label: "EN" },
   { code: "tr", label: "TR" },
 ];
+
+// Localized relative-time helper.
+// input: epoch ms (or ISO string passed via Date.parse)
+// style: "long" → "5m ago" / "5dk önce"
+//        "short" → "5m"   / "5dk"
+export function fmtRelTime(input, style = "long") {
+  if (!input) return t("time_em");
+  const ms = typeof input === "number" ? input : new Date(input).getTime();
+  if (Number.isNaN(ms)) return t("time_em");
+  const diffMs = Date.now() - ms;
+  const s = Math.floor(diffMs / 1000);
+  if (s < 60) {
+    if (style === "short") return t("time_min_short", 0);
+    return t("time_just_now");
+  }
+  const m = Math.floor(s / 60);
+  if (m < 60) {
+    return style === "short" ? t("time_min_short", m) : t("time_min_long", m);
+  }
+  const h = Math.floor(m / 60);
+  if (h < 48) {
+    return style === "short" ? t("time_hour_short", h) : t("time_hour_long", h);
+  }
+  const d = Math.floor(h / 24);
+  if (d < 30) {
+    return style === "short" ? t("time_day_short", d) : t("time_day_long", d);
+  }
+  const date = new Date(ms);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}

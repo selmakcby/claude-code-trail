@@ -1,4 +1,4 @@
-import { setStatus } from "/app.js";
+import { setStatus, t } from "/app.js";
 import { renderMarkdown } from "/markdown.js";
 
 const STORAGE_KEY = "trail-guide-progress";
@@ -24,9 +24,9 @@ function saveProgress(slug) {
 }
 
 export async function renderGuideTab(container) {
-  setStatus("kılavuz yükleniyor…");
+  setStatus(t("guide_loading"));
   const indexRes = await fetch("/docs/_index.json");
-  if (!indexRes.ok) throw new Error("kılavuz indeksi yüklenemedi");
+  if (!indexRes.ok) throw new Error(t("guide_index_failed"));
   const index = await indexRes.json();
   const progress = loadProgress();
 
@@ -40,16 +40,16 @@ export async function renderGuideTab(container) {
   container.innerHTML = `
     <div class="guide-page">
       <div class="page-header">
-        <h1 class="page-title">Kılavuz</h1>
-        <p class="page-sub">${total} ders · ${readCount} okundu · Claude Code'u sıfırdan öğren — vault, skill, agent, memory, patika, llm-wiki stratejisi.</p>
+        <h1 class="page-title">${escapeHtml(t("guide_title"))}</h1>
+        <p class="page-sub">${t("guide_page_sub", { total, read: readCount })}</p>
       </div>
       <div class="guide-layout">
         <aside class="guide-list" id="guide-list"></aside>
         <section class="guide-reader" id="guide-reader">
           <div class="placeholder">
             <div class="placeholder-mark">✦</div>
-            <div class="placeholder-text">bir ders seç</div>
-            <div class="placeholder-sub">Soldan başla — sırayla okumana gerek yok, ihtiyaç duyduğun konuya direkt git.</div>
+            <div class="placeholder-text">${escapeHtml(t("guide_pick"))}</div>
+            <div class="placeholder-sub">${t("guide_pick_sub")}</div>
           </div>
         </section>
       </div>
@@ -57,7 +57,7 @@ export async function renderGuideTab(container) {
   `;
 
   renderList();
-  setStatus(`${total} ders`);
+  setStatus(t("guide_count_status", total));
 }
 
 function renderList() {
@@ -76,7 +76,7 @@ function renderList() {
           <div class="guide-card-summary">${escapeHtml(l.summary)}</div>
           <div class="guide-card-meta">
             <span class="guide-level guide-level-${l.level}">${escapeHtml(l.level)}</span>
-            <span class="guide-time">${l.estMin} dk</span>
+            <span class="guide-time">${l.estMin} min</span>
           </div>
         </div>
       </div>
@@ -94,11 +94,11 @@ async function openLesson(slug) {
     c.classList.toggle("active", c.dataset.slug === slug),
   );
   const reader = document.querySelector("#guide-reader");
-  reader.innerHTML = '<div class="loading">ders açılıyor…</div>';
+  reader.innerHTML = `<div class="loading">${escapeHtml(t("guide_lesson_loading"))}</div>`;
 
   try {
     const res = await fetch(`/docs/${encodeURIComponent(slug)}.md`);
-    if (!res.ok) throw new Error(`ders bulunamadı: ${slug}`);
+    if (!res.ok) throw new Error(t("guide_lesson_not_found", slug));
     const md = await res.text();
 
     const lessonIdx = LOCAL.lessons.findIndex((l) => l.slug === slug);
@@ -110,7 +110,7 @@ async function openLesson(slug) {
         <div class="guide-article-body markdown-render">${renderMarkdown(md)}</div>
         <nav class="guide-nav">
           ${prev ? `<button class="guide-nav-btn" data-slug="${escapeHtml(prev.slug)}">← ${escapeHtml(prev.title)}</button>` : '<span></span>'}
-          <button class="btn btn-primary" id="guide-mark-read">${LOCAL.progress[slug] ? "✓ okundu" : "okundu olarak işaretle"}</button>
+          <button class="btn btn-primary" id="guide-mark-read">${escapeHtml(LOCAL.progress[slug] ? t("guide_btn_read_done") : t("guide_btn_read"))}</button>
           ${next ? `<button class="guide-nav-btn" data-slug="${escapeHtml(next.slug)}">${escapeHtml(next.title)} →</button>` : '<span></span>'}
         </nav>
       </article>
@@ -124,9 +124,9 @@ async function openLesson(slug) {
       saveProgress(slug);
       LOCAL.progress = loadProgress();
       renderList();
-      reader.querySelector("#guide-mark-read").textContent = "✓ okundu";
+      reader.querySelector("#guide-mark-read").textContent = t("guide_btn_read_done");
     });
   } catch (e) {
-    reader.innerHTML = `<div class="error-panel"><div class="error-title">Ders yüklenemedi</div><div class="error-detail">${escapeHtml(e.message)}</div></div>`;
+    reader.innerHTML = `<div class="error-panel"><div class="error-title">${escapeHtml(t("guide_load_failed"))}</div><div class="error-detail">${escapeHtml(e.message)}</div></div>`;
   }
 }

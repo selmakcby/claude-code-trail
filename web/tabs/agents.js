@@ -1,4 +1,4 @@
-import { api, setStatus } from "/app.js";
+import { api, setStatus, t, fmtRelTime } from "/app.js";
 import { renderMarkdown } from "/markdown.js";
 
 let LOCAL = null;
@@ -10,36 +10,22 @@ function escapeHtml(s) {
 }
 
 function fmtRel(iso) {
-  if (!iso) return "hiç";
-  const diff = Date.now() - new Date(iso).getTime();
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return `${s}s önce`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}dk önce`;
-  const h = Math.floor(m / 60);
-  if (h < 48) return `${h}sa önce`;
-  const d = Math.floor(h / 24);
-  return `${d}g önce`;
+  if (!iso) return t("time_never");
+  return fmtRelTime(iso, "long");
 }
 
 export async function renderAgentsTab(container) {
-  setStatus("agents yükleniyor…");
+  setStatus(t("agents_loading"));
   const agents = await api("/api/agents");
 
   if (agents.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-mark">◈</div>
-        <div class="empty-title">Henüz ajan tanımlı değil</div>
-        <div class="empty-sub">
-          <b>Ajan nedir?</b> Claude'un içindeki uzmanlaşmış asistanlar — örn.
-          <code>code-reviewer</code>, <code>security-reviewer</code>, <code>tdd-guide</code>.
-          Her ajanın kendi system prompt'u ve tool izinleri var.<br/><br/>
-          Bu projede (<code>.claude/agents/</code>) veya global
-          (<code>~/.claude/agents/</code>) klasörlerinde tanımlı ajan yok.
-        </div>
+        <div class="empty-title">${escapeHtml(t("agents_empty_title"))}</div>
+        <div class="empty-sub">${t("agents_empty_sub")}</div>
       </div>`;
-    setStatus("ajan yok");
+    setStatus(t("agents_empty_status"));
     return;
   }
 
@@ -53,25 +39,21 @@ export async function renderAgentsTab(container) {
   container.innerHTML = `
     <div class="agents-page">
       <div class="page-header">
-        <h1 class="page-title">Ajanlar</h1>
-        <p class="page-sub">Bu projedeki + global ajanlar, hangisi ne sıklıkta kullanılmış. Kullanılmayan ajanları temizlemek için sağ üstten filtrele.</p>
+        <h1 class="page-title">${escapeHtml(t("agents_title"))}</h1>
+        <p class="page-sub">${t("agents_page_sub")}</p>
       </div>
       <header class="agents-header">
         <div>
           <p class="agents-sub">
-            <b>${agents.length}</b> ajan ·
-            <b>${projectCount}</b> proje ·
-            <b>${globalCount}</b> global ·
-            <b>${used.length}</b> kullanılmış ·
-            <b>${unused.length}</b> hiç tetiklenmemiş
+            ${t("agents_summary", { a: agents.length, p: projectCount, g: globalCount, u: used.length, n: unused.length })}
           </p>
         </div>
         <div class="agents-filter">
-          <button class="type-chip active" data-scope="all">tümü (${agents.length})</button>
-          <button class="type-chip" data-scope="project">proje (${projectCount})</button>
-          <button class="type-chip" data-scope="global">global (${globalCount})</button>
-          <button class="type-chip" data-scope="used">kullanılan (${used.length})</button>
-          <button class="type-chip" data-scope="unused">kullanılmayan (${unused.length})</button>
+          <button class="type-chip active" data-scope="all">${escapeHtml(t("agents_filter_all_count", agents.length))}</button>
+          <button class="type-chip" data-scope="project">${escapeHtml(t("agents_filter_project_count", projectCount))}</button>
+          <button class="type-chip" data-scope="global">${escapeHtml(t("agents_filter_global_count", globalCount))}</button>
+          <button class="type-chip" data-scope="used">${escapeHtml(t("agents_filter_used_count", used.length))}</button>
+          <button class="type-chip" data-scope="unused">${escapeHtml(t("agents_filter_unused_count", unused.length))}</button>
         </div>
       </header>
 
@@ -80,8 +62,8 @@ export async function renderAgentsTab(container) {
         <div class="agents-detail" id="agents-detail">
           <div class="placeholder">
             <div class="placeholder-mark">◈</div>
-            <div class="placeholder-text">ajan seç</div>
-            <div class="placeholder-sub">Soldan bir ajana tıkla — system prompt, tools, kullanım istatistiği burada.</div>
+            <div class="placeholder-text">${escapeHtml(t("agents_pick_label"))}</div>
+            <div class="placeholder-sub">${t("agents_pick_sub")}</div>
           </div>
         </div>
       </div>
@@ -99,7 +81,7 @@ export async function renderAgentsTab(container) {
   });
 
   renderList();
-  setStatus(`${agents.length} ajan`);
+  setStatus(t("agents_count", agents.length));
 }
 
 function filteredAgents() {
@@ -117,7 +99,7 @@ function renderList() {
   const list = document.querySelector("#agents-list");
   const items = filteredAgents();
   if (items.length === 0) {
-    list.innerHTML = '<div class="empty-state-small">eşleşen ajan yok</div>';
+    list.innerHTML = `<div class="empty-state-small">${escapeHtml(t("agents_no_match"))}</div>`;
     return;
   }
   const maxUsage = Math.max(1, ...items.map((a) => a.usageCount));
@@ -172,37 +154,37 @@ async function selectAgent(name) {
 
     <div class="agent-detail-stats" id="agent-stats">
       <div class="stat-block">
-        <div class="stat-label">usage</div>
+        <div class="stat-label">${escapeHtml(t("agents_stat_usage"))}</div>
         <div class="stat-value">${a.usageCount}×</div>
-        <div class="stat-sub">last: ${fmtRel(a.lastUsedAt)}</div>
+        <div class="stat-sub">${escapeHtml(t("agents_stat_last"))} ${escapeHtml(fmtRel(a.lastUsedAt))}</div>
       </div>
       <div class="stat-block" id="agent-tokens-block" style="opacity:0.5">
-        <div class="stat-label">total tokens</div>
+        <div class="stat-label">${escapeHtml(t("agents_total_tokens"))}</div>
         <div class="stat-value" id="agent-total-tokens">…</div>
-        <div class="stat-sub">across all calls</div>
+        <div class="stat-sub">${escapeHtml(t("agents_total_tokens_sub"))}</div>
       </div>
       ${a.tools.length > 0 ? `
         <div class="stat-block">
-          <div class="stat-label">tools</div>
-          <div class="stat-tools">${a.tools.map((t) => `<span class="tool-pill">${escapeHtml(t)}</span>`).join("")}</div>
+          <div class="stat-label">${escapeHtml(t("agents_stat_tools"))}</div>
+          <div class="stat-tools">${a.tools.map((tn) => `<span class="tool-pill">${escapeHtml(tn)}</span>`).join("")}</div>
         </div>` : ""}
       ${a.model ? `
         <div class="stat-block">
-          <div class="stat-label">model</div>
+          <div class="stat-label">${escapeHtml(t("agents_stat_model"))}</div>
           <div class="stat-value-sm">${escapeHtml(a.model)}</div>
         </div>` : ""}
     </div>
 
-    <h3 class="section-title">activity — calls in past sessions</h3>
+    <h3 class="section-title">${escapeHtml(t("agents_activity_title"))}</h3>
     <p class="agent-activity-note">
-      The tasks this agent was given, when, and how much it (roughly) cost.
-      <span class="agent-activity-warn">Note: Claude Code doesn't log <i>which files</i> the subagent touched internally — only its input prompt and final response are visible.</span>
+      ${escapeHtml(t("agents_activity_note"))}
+      <span class="agent-activity-warn">${t("agents_activity_warn")}</span>
     </p>
     <div class="agent-activity-list" id="agent-activity-list">
-      <div class="loading">loading activity…</div>
+      <div class="loading">${escapeHtml(t("agents_activity_loading"))}</div>
     </div>
 
-    <h3 class="section-title">system prompt</h3>
+    <h3 class="section-title">${escapeHtml(t("agents_section_prompt"))}</h3>
     <div class="agent-prompt markdown-render">${renderMarkdown(a.body)}</div>
   `;
 
@@ -224,7 +206,7 @@ async function loadAgentActivity(name) {
     if (tokenBlock) tokenBlock.style.opacity = totalTokens > 0 ? "1" : "0.5";
 
     if (activities.length === 0) {
-      list.innerHTML = '<div class="agent-activity-empty">This agent hasn\'t been called yet in any recorded session.</div>';
+      list.innerHTML = `<div class="agent-activity-empty">${escapeHtml(t("agents_activity_empty"))}</div>`;
       return;
     }
 
@@ -232,24 +214,24 @@ async function loadAgentActivity(name) {
       <details class="agent-activity-card" ${idx === 0 ? "open" : ""}>
         <summary class="agent-activity-summary">
           <div class="agent-activity-line">
-            <span class="agent-activity-desc">${escapeHtml(act.description || "(no description)")}</span>
+            <span class="agent-activity-desc">${escapeHtml(act.description || t("agents_activity_no_desc"))}</span>
             <span class="agent-activity-time">${fmtAbsTime(act.timestamp)}</span>
           </div>
           <div class="agent-activity-stats">
             <span class="agent-activity-tag">⏱ ${fmtDuration(act.durationMs)}</span>
             <span class="agent-activity-tag">≈ ${fmtTokens(act.estimatedTokens)} tok</span>
-            <span class="agent-activity-tag">session <code>${escapeHtml(act.sessionId.slice(0, 8))}</code></span>
+            <span class="agent-activity-tag">${escapeHtml(t("agents_activity_session"))} <code>${escapeHtml(act.sessionId.slice(0, 8))}</code></span>
           </div>
         </summary>
         <div class="agent-activity-body">
           <div class="agent-activity-section">
-            <div class="agent-activity-label">task prompt</div>
-            <pre class="agent-activity-pre">${escapeHtml(act.prompt)}${act.promptTruncated ? "\n\n[…truncated]" : ""}</pre>
+            <div class="agent-activity-label">${escapeHtml(t("agents_activity_task"))}</div>
+            <pre class="agent-activity-pre">${escapeHtml(act.prompt)}${act.promptTruncated ? `\n\n${t("agents_activity_truncated")}` : ""}</pre>
           </div>
           ${act.resultPreview ? `
             <div class="agent-activity-section">
-              <div class="agent-activity-label">result</div>
-              <pre class="agent-activity-pre">${escapeHtml(act.resultPreview)}${act.resultTruncated ? "\n\n[…truncated]" : ""}</pre>
+              <div class="agent-activity-label">${escapeHtml(t("agents_activity_result"))}</div>
+              <pre class="agent-activity-pre">${escapeHtml(act.resultPreview)}${act.resultTruncated ? `\n\n${t("agents_activity_truncated")}` : ""}</pre>
             </div>` : ""}
         </div>
       </details>
