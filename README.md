@@ -8,12 +8,14 @@
 
 ## Install — two commands
 
-In any Claude Code session:
+In any Claude Code session, type these (don't send as message — type into the prompt and press Enter):
 
 ```
 /plugin marketplace add selmakcby/claude-code-trail
 /plugin install trail@selmakcby
 ```
+
+When the install picker asks for scope, pick **`Install for you (user scope)`** — Trail is designed to work across all your projects, so user scope is the right choice. ([What's a scope?](#install-scopes))
 
 Then in any project:
 
@@ -24,6 +26,16 @@ Then in any project:
 Browser opens at `http://localhost:7777`. Switch projects from the top-left dropdown.
 
 **Requirements:** Bun >= 1.0 (`curl -fsSL https://bun.sh/install | bash`).
+
+### Install scopes
+
+When you run `/plugin install`, Claude Code asks where to install:
+
+| Scope | What it does | Pick for Trail? |
+|---|---|---|
+| **user** | Active in **all your projects** | ✅ Yes — Trail is multi-project |
+| **project** | Active for this repo + its collaborators (saved in `.claude/settings.json`) | ❌ Trail isn't tied to a specific repo |
+| **local** | Active only in this folder, only for you | ❌ Too narrow |
 
 ---
 
