@@ -1,4 +1,4 @@
-import { api, setStatus } from "/app.js";
+import { api, setStatus, t, getLang } from "/app.js";
 
 const TOOL_GLYPH = {
   Read: "→", Edit: "✎", Write: "✎", MultiEdit: "✎", NotebookEdit: "✎",
@@ -6,21 +6,27 @@ const TOOL_GLYPH = {
   WebFetch: "↗", WebSearch: "⌕", TodoWrite: "✓", Other: "·",
 };
 
-const TOOL_LABEL_TR = {
-  Read: "okuma",
-  Edit: "düzenleme",
-  Write: "yazma",
-  MultiEdit: "çoklu düzenleme",
-  NotebookEdit: "notebook",
-  Bash: "komut",
-  Grep: "metin arama",
-  Glob: "dosya arama",
-  Agent: "alt ajan",
-  WebFetch: "web indirme",
-  WebSearch: "web arama",
-  TodoWrite: "görev planı",
-  Other: "diğer",
+const TOOL_LABELS = {
+  en: {
+    Read: "read", Edit: "edit", Write: "write",
+    MultiEdit: "multi-edit", NotebookEdit: "notebook",
+    Bash: "command", Grep: "search text", Glob: "search files",
+    Agent: "subagent", WebFetch: "web fetch", WebSearch: "web search",
+    TodoWrite: "tasks", Other: "other",
+  },
+  tr: {
+    Read: "okuma", Edit: "düzenleme", Write: "yazma",
+    MultiEdit: "çoklu düzenleme", NotebookEdit: "notebook",
+    Bash: "komut", Grep: "metin arama", Glob: "dosya arama",
+    Agent: "alt ajan", WebFetch: "web indirme", WebSearch: "web arama",
+    TodoWrite: "görev planı", Other: "diğer",
+  },
 };
+
+function toolLabel(tool) {
+  const lang = getLang();
+  return (TOOL_LABELS[lang] || TOOL_LABELS.en)[tool] || tool.toLowerCase();
+}
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
@@ -57,21 +63,16 @@ function shortPath(p) {
 }
 
 export async function renderTrailTab(container) {
-  setStatus("trail yükleniyor…");
+  setStatus(t("status_loading"));
   const data = await api("/api/trail/current");
   if (data?.empty) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-mark">◷</div>
-        <div class="empty-title">Bu projede henüz Claude patikası yok</div>
-        <div class="empty-sub">
-          <b>Patika nedir?</b> Claude'un bu projede dokunduğu dosyaların kronolojik kaydı —
-          hangi dosya okundu, yazıldı, hangi komut çalıştırıldı, sırayla.<br/><br/>
-          Bu projede Claude Code'da henüz hiç mesaj atılmamış.
-          <code>claude</code> komutuyla başla, bir kaç mesaj at, sonra bu sekmeyi yenile.
-        </div>
+        <div class="empty-title">${escapeHtml(t("trail_empty_title"))}</div>
+        <div class="empty-sub">${t("trail_empty_sub")}</div>
       </div>`;
-    setStatus("session yok");
+    setStatus(t("trail_empty_title"));
     return;
   }
 
@@ -84,49 +85,63 @@ export async function renderTrailTab(container) {
   const topToolPair = breakdownEntries[0];
   const topFile = heat[0];
   const dur = fmtDuration(data.startedAt, data.endedAt);
-  const human = [
-    `Claude bu session'da <b>${totalTools} işlem</b> yaptı`,
-    heat.length > 0 ? `<b>${heat.length} dosyaya</b> dokundu` : null,
-    topToolPair ? `en çok <b>${TOOL_LABEL_TR[topToolPair[0]] ?? topToolPair[0]}</b> kullandı (${topToolPair[1]} kez)` : null,
-    topFile ? `en çok temas: <code>${escapeHtml(shortPath(topFile.path))}</code> (${topFile.hits}×)` : null,
-    dur !== "—" ? `süre <b>${dur}</b>` : null,
-  ].filter(Boolean).join(" · ");
+  const lang = getLang();
+  const human = lang === "tr"
+    ? [
+        `Claude bu session'da <b>${totalTools} işlem</b> yaptı`,
+        heat.length > 0 ? `<b>${heat.length} dosyaya</b> dokundu` : null,
+        topToolPair ? `en çok <b>${toolLabel(topToolPair[0])}</b> kullandı (${topToolPair[1]} kez)` : null,
+        topFile ? `en çok temas: <code>${escapeHtml(shortPath(topFile.path))}</code> (${topFile.hits}×)` : null,
+        dur !== "—" ? `süre <b>${dur}</b>` : null,
+      ].filter(Boolean).join(" · ")
+    : [
+        `Claude made <b>${totalTools} tool calls</b> in this session`,
+        heat.length > 0 ? `touched <b>${heat.length} files</b>` : null,
+        topToolPair ? `mostly <b>${toolLabel(topToolPair[0])}</b> (${topToolPair[1]}×)` : null,
+        topFile ? `most-touched: <code>${escapeHtml(shortPath(topFile.path))}</code> (${topFile.hits}×)` : null,
+        dur !== "—" ? `duration <b>${dur}</b>` : null,
+      ].filter(Boolean).join(" · ");
+
+  const isTR = lang === "tr";
+  const statLabels = isTR
+    ? { user: "kullanıcı", asst: "asistan", tools: "tool çağrısı", files: "dosya" }
+    : { user: "user", asst: "assistant", tools: "tool calls", files: "files" };
 
   container.innerHTML = `
     <div class="trail-page">
       <div class="page-header">
-        <h1 class="page-title">Claude'un patikası</h1>
-        <p class="page-sub">Aktif session'da Claude hangi dosyalara sırayla dokundu, hangi tool'ları kaç kere çağırdı.</p>
+        <h1 class="page-title">${escapeHtml(t("trail_title"))}</h1>
+        <p class="page-sub">${escapeHtml(t("trail_page_sub"))}</p>
       </div>
       <div class="trail-human">${human}</div>
       <header class="trail-header">
         <div class="trail-meta">
           <div class="trail-title">
-            <span class="trail-pill">aktif session</span>
+            <span class="trail-pill">${escapeHtml(t("trail_pill_active"))}</span>
             <span class="trail-id">${escapeHtml(data.id.slice(0, 8))}</span>
             <span class="trail-models">${data.models.map(escapeHtml).join(" · ")}</span>
           </div>
           <div class="trail-stats">
-            <span><b>${data.userTurnCount}</b> kullanıcı</span>
-            <span><b>${data.assistantTurnCount}</b> asistan</span>
-            <span><b>${totalTools}</b> tool çağrısı</span>
-            <span><b>${heat.length}</b> dosya</span>
+            <span><b>${data.userTurnCount}</b> ${statLabels.user}</span>
+            <span><b>${data.assistantTurnCount}</b> ${statLabels.asst}</span>
+            <span><b>${totalTools}</b> ${statLabels.tools}</span>
+            <span><b>${heat.length}</b> ${statLabels.files}</span>
             <span><b>${fmtDuration(data.startedAt, data.endedAt)}</b></span>
           </div>
         </div>
         ${data.firstUserPrompt ? `
           <div class="trail-firstprompt">
-            <span class="trail-firstprompt-label">ilk prompt</span>
+            <span class="trail-firstprompt-label">${escapeHtml(t("history_first_prompt"))}</span>
             <span class="trail-firstprompt-text">${escapeHtml(data.firstUserPrompt)}</span>
           </div>` : ""}
       </header>
 
       <section class="trail-breakdown">
-        <h3 class="section-title">tool dağılımı</h3>
+        <h3 class="section-title">${escapeHtml(t("trail_section_breakdown"))}</h3>
         <div class="breakdown-bars">
           ${breakdownEntries.map(([tool, count]) => `
-            <div class="breakdown-row" title="${escapeHtml(tool)} — ${TOOL_LABEL_TR[tool] ?? "diğer"}">
-              <span class="breakdown-tool">${TOOL_GLYPH[tool] ?? "·"} ${tool} <span class="breakdown-tool-tr">${TOOL_LABEL_TR[tool] ?? ""}</span></span>
+            <div class="breakdown-row" title="${escapeHtml(tool)} — ${escapeHtml(toolLabel(tool))}">
+              <span class="breakdown-tool">${TOOL_GLYPH[tool] ?? "·"} ${tool} <span class="breakdown-tool-tr">${escapeHtml(toolLabel(tool))}</span></span>
               <div class="breakdown-bar"><div class="breakdown-bar-fill" style="width: ${(count / maxBreakdown) * 100}%"></div></div>
               <span class="breakdown-count">${count}×</span>
             </div>
@@ -135,7 +150,7 @@ export async function renderTrailTab(container) {
       </section>
 
       <section class="trail-heatmap">
-        <h3 class="section-title">dosya ısı haritası</h3>
+        <h3 class="section-title">${escapeHtml(t("trail_section_heatmap"))}</h3>
         <div class="heatmap-list">
           ${heat.map((h) => {
             const intensity = Math.min(1, h.hits / (heat[0]?.hits || 1));
@@ -151,19 +166,19 @@ export async function renderTrailTab(container) {
 
       <section class="trail-timeline-wrap">
         <h3 class="section-title">
-          patika — kronolojik
+          ${escapeHtml(t("trail_section_timeline"))}
           <span class="section-sub">
-            <span class="scrub-label">zamanı geri sar</span>
-            <input type="range" id="trail-scrub" min="0" max="${totalTools - 1}" value="${totalTools - 1}" aria-label="patika zamanı" />
+            <span class="scrub-label">${escapeHtml(t("trail_scrub_label"))}</span>
+            <input type="range" id="trail-scrub" min="0" max="${totalTools - 1}" value="${totalTools - 1}" aria-label="${escapeHtml(t("trail_scrub_label"))}" />
             <span class="scrub-pos" id="trail-scrub-pos">${totalTools}/${totalTools}</span>
           </span>
         </h3>
-        <p class="trail-timeline-hint">Sürgüyü sola çek — Claude'un ilk adımından şu ana kadar adım adım gör. Aktif adım vurgulanır.</p>
+        <p class="trail-timeline-hint">${escapeHtml(t("trail_timeline_hint"))}</p>
         <div class="trail-timeline" id="trail-timeline">
           ${data.events.map((e) => `
             <div class="trail-event" data-idx="${e.index}" data-tool="${escapeHtml(e.tool)}">
               <span class="trail-event-glyph">${TOOL_GLYPH[e.tool] ?? "·"}</span>
-              <span class="trail-event-tool" title="${escapeHtml(TOOL_LABEL_TR[e.tool] ?? "diğer")}">${escapeHtml(e.tool)}</span>
+              <span class="trail-event-tool" title="${escapeHtml(toolLabel(e.tool))}">${escapeHtml(e.tool)}</span>
               <span class="trail-event-summary">${escapeHtml(e.summary || "—")}</span>
               <span class="trail-event-time">${fmtTime(e.timestamp)}</span>
             </div>
@@ -189,5 +204,5 @@ export async function renderTrailTab(container) {
   });
   scrub.dispatchEvent(new Event("input"));
 
-  setStatus(`${totalTools} tool · ${heat.length} dosya`);
+  setStatus(`${totalTools} ${statLabels.tools} · ${heat.length} ${statLabels.files}`);
 }

@@ -1,4 +1,4 @@
-import { api, setStatus } from "/app.js";
+import { api, setStatus, t } from "/app.js";
 import { renderMarkdown } from "/markdown.js";
 
 const ICONS = { vault: "◐", code: "◇", agents: "◈", skills: "◉", data: "○" };
@@ -18,39 +18,39 @@ export async function renderFilesTab(container) {
   container.innerHTML = `
     <div class="files-wrap">
       <div class="page-header page-header-compact">
-        <h1 class="page-title">Dosyalar</h1>
-        <p class="page-sub">Proje dosyaları, 5 kategoriye ayrılmış. <code>.env</code>, key, credentials dosyaları otomatik mask'lı.</p>
+        <h1 class="page-title">${escapeHtml(t("files_title"))}</h1>
+        <p class="page-sub">${t("files_page_sub")}</p>
       </div>
     <div class="files-layout">
       <aside class="sidebar">
         <div class="cat-filter">
-          <button class="cat-btn active" data-cat="all">tümü</button>
-          <button class="cat-btn" data-cat="vault">vault</button>
-          <button class="cat-btn" data-cat="code">code</button>
-          <button class="cat-btn" data-cat="agents">agents</button>
-          <button class="cat-btn" data-cat="skills">skills</button>
-          <button class="cat-btn" data-cat="data">data</button>
+          <button class="cat-btn active" data-cat="all">${escapeHtml(t("files_cat_all"))}</button>
+          <button class="cat-btn" data-cat="vault">${escapeHtml(t("files_cat_vault"))}</button>
+          <button class="cat-btn" data-cat="code">${escapeHtml(t("files_cat_code"))}</button>
+          <button class="cat-btn" data-cat="agents">${escapeHtml(t("files_cat_agents"))}</button>
+          <button class="cat-btn" data-cat="skills">${escapeHtml(t("files_cat_skills"))}</button>
+          <button class="cat-btn" data-cat="data">${escapeHtml(t("files_cat_data"))}</button>
         </div>
         <div class="tree-wrap">
-          <div class="tree" id="file-tree"><div class="tree-empty">yükleniyor…</div></div>
+          <div class="tree" id="file-tree"><div class="tree-empty">${escapeHtml(t("status_loading"))}</div></div>
         </div>
       </aside>
       <section class="content">
         <div class="content-header">
           <div class="file-meta">
-            <span class="file-meta-label">açık dosya:</span>
-            <span class="file-meta-path" id="open-path">— sol taraftan bir dosya seç —</span>
+            <span class="file-meta-label">${escapeHtml(t("files_open_label"))}</span>
+            <span class="file-meta-path" id="open-path">${escapeHtml(t("files_open_placeholder"))}</span>
           </div>
           <div class="file-actions">
-            <button class="btn btn-ghost" id="toggle-edit-btn" disabled>düzenle</button>
-            <button class="btn btn-primary" id="save-btn" disabled>kaydet</button>
+            <button class="btn btn-ghost" id="toggle-edit-btn" disabled>${escapeHtml(t("files_btn_edit"))}</button>
+            <button class="btn btn-primary" id="save-btn" disabled>${escapeHtml(t("files_btn_save"))}</button>
           </div>
         </div>
         <div class="editor-area" id="editor-area">
           <div class="placeholder">
             <div class="placeholder-mark">▣</div>
-            <div class="placeholder-text">Files</div>
-            <div class="placeholder-sub">Sol taraftan dosya seç. Markdown render edilir, kod text görünür, .env mask'lı.</div>
+            <div class="placeholder-text">${escapeHtml(t("files_placeholder_text"))}</div>
+            <div class="placeholder-sub">${t("files_placeholder_sub")}</div>
           </div>
         </div>
       </section>

@@ -29,9 +29,15 @@ if [ -z "$PLUGIN_DIR" ] && [ -L "$HOME/.claude/skills/trail" ]; then
 fi
 
 if [ -z "$PLUGIN_DIR" ] || [ ! -d "$PLUGIN_DIR/scripts" ]; then
-  echo "Trail: plugin path not found."
-  echo "Tried: \$CLAUDE_PLUGIN_ROOT, ~/.claude/plugins/cache/*/trail/*/, ~/.claude/skills/trail"
-  echo "Check installation: /plugin marketplace list"
+  echo "Trail: plugin yolu bulunamadı."
+  echo ""
+  echo "Plugin cache eskiyse yenile:"
+  echo "  /plugin uninstall trail@selmakcby"
+  echo "  /plugin install trail@selmakcby"
+  echo "  /reload-plugins"
+  echo ""
+  echo "Veya marketplace'de değilse:"
+  echo "  /plugin marketplace add selmakcby/claude-code-trail"
   exit 1
 fi
 
